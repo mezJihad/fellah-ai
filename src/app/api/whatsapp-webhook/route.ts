@@ -1,4 +1,7 @@
 import { NextResponse } from 'next/server';
+import { GoogleGenerativeAI } from '@google/generative-ai';
+
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
 // ============================================================================
 // 📱 WEBHOOK WHATSAPP (Point d'entrée principal)
@@ -31,13 +34,24 @@ export async function POST(request: Request) {
       console.log('📝 Message texte reçu.');
     }
 
-    // 3. Appel au "Cerveau" : LLM (Gemini 1.5 Pro ou GPT-4o) + Base de données RAG
+    // 3. Appel au "Cerveau" : LLM (Gemini) + Base de données RAG
     console.log(`🧠 Envoi de la requête au LLM : "${transcription}"`);
-    // 📝 TODO:
-    // - Effectuer une recherche dans la base de données vectorielle (Pinecone/Chroma)
-    // - Construire le prompt avec le contexte (ONSSA, ONCA)
-    // - Appeler l'API Gemini ou OpenAI
-    const llmResponseText = "Simulation: Voici les conseils pour traiter l'œil de paon sur vos oliviers...";
+    
+    let llmResponseText = "";
+    try {
+      // Configuration du modèle avec un prompt système pour lui donner son rôle
+      const model = genAI.getGenerativeModel({ 
+        model: "gemini-1.5-flash",
+        systemInstruction: "Tu es Fellah AI, un assistant agricole expert pour les agriculteurs marocains. Tu réponds aux questions de manière simple, directe et bienveillante, de préférence en Darija marocaine (en caractères latins ou arabes selon la question). Tes conseils doivent respecter les bonnes pratiques agricoles."
+      });
+
+      const result = await model.generateContent(transcription);
+      llmResponseText = result.response.text();
+      console.log('✅ Réponse Gemini générée.');
+    } catch (error) {
+      console.error('❌ Erreur Gemini:', error);
+      llmResponseText = "Désolé, j'ai eu un problème de connexion avec mon cerveau. Veuillez réessayer.";
+    }
 
     // 4. Déterminer le format de réponse (Texte ou Audio+Texte)
     // Règle métier : Si l'utilisateur a envoyé un audio, on lui répond par Audio + Texte.
