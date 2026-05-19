@@ -41,11 +41,14 @@ export async function POST(request: Request) {
     try {
       // Configuration du modèle avec un prompt système pour lui donner son rôle
       const model = genAI.getGenerativeModel({ 
-        model: "gemini-1.5-flash",
-        systemInstruction: "Tu es Fellah AI, un assistant agricole expert pour les agriculteurs marocains. Tu réponds aux questions de manière simple, directe et bienveillante, de préférence en Darija marocaine (en caractères latins ou arabes selon la question). Tes conseils doivent respecter les bonnes pratiques agricoles."
+        model: "gemini-2.5-flash-lite",
+        systemInstruction: "Tu es Fellah AI, un assistant agricole expert pour les agriculteurs marocains. Tu réponds aux questions de manière très brève, directe et bienveillante, en Darija marocaine. IMPORTANT : Sois extrêmement concis (maximum 2 à 3 phrases) pour répondre le plus rapidement possible."
       });
 
-      const result = await model.generateContent(transcription);
+      const result = await model.generateContent({
+        contents: [{ role: 'user', parts: [{ text: transcription }] }],
+        generationConfig: { maxOutputTokens: 300 }
+      });
       llmResponseText = result.response.text();
       console.log('✅ Réponse Gemini générée.');
     } catch (error) {
@@ -69,17 +72,31 @@ export async function POST(request: Request) {
 
     // 5. Renvoyer la réponse à WhatsApp (via Twilio TwiML)
     // Twilio permet d'envoyer un message texte, et optionnellement un média (audio)
-    let twimlResponse = `
+    // Fonction pour échapper les caractères spéciaux XML
+    const escapeXml = (unsafe: string) => {
+      return unsafe.replace(/[<>&'"]/g, (c) => {
+        switch (c) {
+          case '<': return '&lt;';
+          case '>': return '&gt;';
+          case '&': return '&amp;';
+          case '\'': return '&apos;';
+          case '"': return '&quot;';
+          default: return c;
+        }
+      });
+    };
+
+    let twimlResponse = `<?xml version="1.0" encoding="UTF-8"?>
       <Response>
         <Message>
-          <Body>${llmResponseText}</Body>
+          <Body>${escapeXml(llmResponseText)}</Body>
           ${generatedAudioUrl ? `<Media>${generatedAudioUrl}</Media>` : ''}
         </Message>
       </Response>
     `;
 
     return new NextResponse(twimlResponse, {
-      headers: { 'Content-Type': 'text/xml' },
+      headers: { 'Content-Type': 'text/xml; charset=utf-8' },
     });
 
   } catch (error) {
