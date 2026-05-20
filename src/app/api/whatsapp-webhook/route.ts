@@ -3,6 +3,10 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
+// Stockage en mémoire de l'historique des conversations (Détruit au redémarrage du serveur)
+type ChatMessage = { role: "user" | "model", parts: { text: string }[] };
+const conversationHistory = new Map<string, ChatMessage[]>();
+
 // ============================================================================
 // 📱 WEBHOOK WHATSAPP (Point d'entrée principal)
 // Ce fichier gère les requêtes entrantes de WhatsApp (ex: via Twilio ou Meta API)
@@ -45,11 +49,24 @@ export async function POST(request: Request) {
         systemInstruction: "Tu es Fellah AI, un assistant agricole expert pour les agriculteurs marocains. Tu réponds aux questions de manière très brève, directe et bienveillante, en Darija marocaine. IMPORTANT : Sois extrêmement concis (maximum 2 à 3 phrases) pour répondre le plus rapidement possible."
       });
 
+      // Récupération de l'historique ou création d'un nouveau
+      let history = conversationHistory.get(sender) || [];
+      
+      // Ajouter le nouveau message
+      history.push({ role: 'user', parts: [{ text: transcription }] });
+
+      // Limiter l'historique aux 10 derniers messages pour éviter les requêtes trop lourdes
+      if (history.length > 10) history = history.slice(history.length - 10);
+
       const result = await model.generateContent({
-        contents: [{ role: 'user', parts: [{ text: transcription }] }],
+        contents: history,
         generationConfig: { maxOutputTokens: 300 }
       });
       llmResponseText = result.response.text();
+      
+      // Sauvegarder la réponse dans l'historique
+      history.push({ role: 'model', parts: [{ text: llmResponseText }] });
+      conversationHistory.set(sender, history);
       console.log('✅ Réponse Gemini générée.');
     } catch (error) {
       console.error('❌ Erreur Gemini:', error);
