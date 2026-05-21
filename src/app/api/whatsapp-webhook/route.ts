@@ -5,15 +5,12 @@ import twilio from 'twilio';
 import Groq from 'groq-sdk';
 import crypto from 'crypto';
 import { audioStore } from '@/lib/audioStore';
+import { getHistory, saveHistory, type ChatMessage } from '@/lib/conversationStore';
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY || '' });
 const twilioClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY || '' });
-
-// Stockage en mémoire de l'historique des conversations (Détruit au redémarrage du serveur)
-type ChatMessage = { role: "user" | "model", parts: { text: string }[] };
-const conversationHistory = new Map<string, ChatMessage[]>();
 
 const SYSTEM_INSTRUCTION = "Tu es Fellah AI, un assistant agricole expert pour les agriculteurs marocains. IMPORTANT : 1) Réponds TOUJOURS dans la même langue que l'utilisateur (français, arabe, darija). 2) Comporte-toi comme un vrai expert : si une question nécessite du contexte pour être précise (ex: type de sol, culture en bour ou irriguée, variété, région), pose d'abord ces questions à l'agriculteur au lieu de donner une réponse générique. 3) Ne donne PAS de longs détails superflus. Sois concis et va droit au but.";
 
@@ -152,8 +149,8 @@ async function processMessageInBackground(sender: string, messageOrMediaUrl: str
   
   console.log(`🧠 Envoi de la requête au LLM : "${transcription}"`);
 
-  // Récupération de l'historique ou création d'un nouveau
-  let history = conversationHistory.get(sender) || [];
+  // Récupération de l'historique depuis Supabase
+  let history = await getHistory(sender);
   
   // Ajouter le nouveau message
   history.push({ role: 'user', parts: [{ text: transcription }] });
@@ -188,9 +185,9 @@ async function processMessageInBackground(sender: string, messageOrMediaUrl: str
     }
   }
   
-  // Sauvegarder la réponse dans l'historique
+  // Sauvegarder la réponse dans Supabase
   history.push({ role: 'model', parts: [{ text: llmResponseText }] });
-  conversationHistory.set(sender, history);
+  await saveHistory(sender, history);
 
   // 4. Déterminer le format de réponse (Texte ou Audio+Texte)
   let generatedAudioUrl: string | null = null;
