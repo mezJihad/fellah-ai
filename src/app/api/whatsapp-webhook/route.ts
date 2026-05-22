@@ -221,7 +221,11 @@ async function processMessageInBackground(
 
     const result = await model.generateContent({
       contents,
-      generationConfig: { maxOutputTokens: 800 },
+      generationConfig: {
+        maxOutputTokens: 2000,
+        // @ts-ignore — thinkingConfig supported by gemini-2.5-flash, not yet in SDK types
+        thinkingConfig: { thinkingBudget: 0 },
+      },
     });
 
     llmResponseText = result.response.text();
