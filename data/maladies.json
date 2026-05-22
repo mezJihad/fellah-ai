@@ -1,0 +1,128 @@
+[
+  {
+    "culture": "olivier",
+    "category": "maladie",
+    "region": null,
+    "source": "INRA Maroc / ONSSA",
+    "content": "Œil de paon de l'olivier (Spilocaea oleagina) — Maladie fongique la plus répandue sur olivier au Maroc.\n\nSYMPTÔMES : Taches circulaires brun-noirâtres sur la face supérieure des feuilles, entourées d'un halo jaune. Chute précoce des feuilles (défoliation) en automne et hiver. Affaiblit l'arbre et réduit la production d'olives.\n\nCONDITIONS FAVORABLES : Humidité élevée, températures entre 15-20°C, rosées fréquentes. Plus grave dans les zones côtières et les vergers densément plantés.\n\nTRAITEMENTS HOMOLOGUÉS AU MAROC (ONSSA) :\n- Bouillie bordelaise (cuivre) : 400-600 g/hl — traitement préventif avant les pluies d'automne\n- Oxychlorure de cuivre : 300-400 g/hl\n- Carbendazime : selon étiquette\n- Tebuconazole : traitement curatif\n\nCALENDRIER DE TRAITEMENT : 2 traitements principaux — 1er après récolte (novembre-décembre), 2ème au débourrement (mars). Répéter si pluies fréquentes.\n\nPRÉVENTION : Taille d'aération pour réduire l'humidité, ramassage des feuilles tombées, choisir des variétés moins sensibles comme Picholine marocaine."
+  },
+  {
+    "culture": "olivier",
+    "category": "maladie",
+    "region": null,
+    "source": "INRA Maroc / agrimaroc.net",
+    "content": "Mouche de l'olive — Bactrocera oleae — Principal ravageur de l'olivier au Maroc.\n\nDÉGÂTS : La femelle pond ses œufs dans les olives. La larve creuse des galeries dans la pulpe, causant la chute prématurée des fruits et la dégradation de la qualité de l'huile (augmentation de l'acidité). Peut détruire 20 à 60% de la récolte en années favorables.\n\nCONDITIONS FAVORABLES : Températures entre 20-30°C, humidité modérée. Pic d'infestation : août à novembre. Plus grave dans les régions côtières et sub-humides (Marrakech, Souss).\n\nSURVEILLANCE : Utiliser des pièges chromotropiques jaunes avec phéromone sexuelle. Seuil d'intervention : 10% de fruits piqués ou 5-10 adultes/piège/semaine.\n\nTRAITEMENTS HOMOLOGUÉS AU MAROC :\n- Spinosad (Spintor) : traitement appât sur 1/3 de l'arbre, 7-10 jours d'intervalle\n- Dimethoate : traitement foliaire complet (respecter DAR 21 jours avant récolte)\n- Kaolin : traitement répulsif, 2-3 applications\n\nCALENDRIER : Pose des pièges dès juillet. Premier traitement appât quand 3-5% des fruits sont attaqués. Arrêt 3 semaines avant récolte.\n\nPRÉVENTION : Récolte précoce dans les zones très infestées, destruction des olives tombées, hygiène du verger."
+  },
+  {
+    "culture": "olivier",
+    "category": "maladie",
+    "region": null,
+    "source": "INRA Maroc",
+    "content": "Teigne de l'olivier — Prays oleae — Ravageur à trois générations par an sur olivier au Maroc.\n\nDÉGÂTS : 3 générations aux dégâts différents :\n1. Génération anthophage (printemps) : larves mangent les fleurs → perte de nouer\n2. Génération carpophage (été) : larves dans le noyau des jeunes olives → chute de fruits\n3. Génération phyllophage (hiver) : larves minent les feuilles\n\nSURVEILLANCE : Pièges à phéromone sexuelle. Seuil : 100-200 adultes/piège/semaine pour la génération carpophage.\n\nTRAITEMENTS :\n- Bacillus thuringiensis (BT) : traitement biologique, 2ème et 3ème stade larvaire\n- Chlorpyrifos : traitement chimique en période critique\n- Spinosad : efficace sur jeunes larves\n\nCALENDRIER : Traitement génération anthophage : fin floraison. Traitement génération carpophage : 30-40 jours après nouaison."
+  },
+  {
+    "culture": "olivier",
+    "category": "maladie",
+    "region": null,
+    "source": "INRA Maroc / ONSSA",
+    "content": "Verticilliose de l'olivier — Verticillium dahliae — Maladie vasculaire grave, fréquente dans les nouvelles plantations au Maroc.\n\nSYMPTÔMES : Dessèchement soudain de rameaux entiers (syndrome de l'apoplexie), feuilles qui jaunissent et restent accrochées. Le bois coupé montre un brunissement des vaisseaux. Peut tuer l'arbre entier.\n\nCONDITIONS FAVORABLES : Sols lourds mal drainés, après culture de solanacées ou cotonnier sur la même parcelle, printemps frais et humide.\n\nPAS DE TRAITEMENT CURATIF EFFICACE.\n\nGESTION :\n- Éliminer et brûler les branches atteintes (désinfecter les outils avec alcool ou eau de javel)\n- Éviter de planter de l'olivier après tomate, pomme de terre, coton\n- Choisir des plants certifiés sains\n- Désinfecter le sol à la solarisation avant plantation\n- Variétés moins sensibles : Menara, Dahbia\n\nPRÉVENTION : Ne pas blesser les racines au labour, assurer un bon drainage, éviter l'excès d'azote."
+  },
+  {
+    "culture": "blé",
+    "category": "maladie",
+    "region": null,
+    "source": "INRA Maroc / agrimaroc.net",
+    "content": "Rouille jaune du blé — Puccinia striiformis — Maladie fongique majeure des céréales au Maroc.\n\nSYMPTÔMES : Pustules jaune-orangé disposées en stries longitudinales sur les feuilles et gaines. En forte attaque, les épis sont aussi touchés. Cause des pertes de rendement de 20 à 70%.\n\nCONDITIONS FAVORABLES : Températures fraîches (7-15°C), humidité élevée, rosées fréquentes. Période critique : tallage à montaison (février-avril au Maroc). Plus grave dans les zones montagneuses (Saïss, Beni Mellal).\n\nVARIÉTÉS RÉSISTANTES (INRA Maroc) : Arrehane, Attila, Carioca — moins sensibles. Variétés sensibles : Acalou, Fassia (anciennes).\n\nTRAITEMENTS FONGICIDES HOMOLOGUÉS AU MAROC :\n- Tebuconazole (Folicur) : 0,75-1 L/ha — traitement curatif efficace\n- Propiconazole (Tilt) : 0,5 L/ha\n- Trifloxystrobine + Propiconazole : 0,75 L/ha\n- Azoxystrobine : 1 L/ha — préventif\n\nCALENDRIER : Surveiller à partir du tallage. Traiter dès apparition des premières pustules sur 30% des feuilles supérieures. 1 à 2 traitements maximum.\n\nSEUIL D'INTERVENTION : 1 pustule sur les 3 premières feuilles supérieures à la montaison."
+  },
+  {
+    "culture": "blé",
+    "category": "maladie",
+    "region": null,
+    "source": "INRA Maroc / agrimaroc.net",
+    "content": "Septoriose du blé — Septoria tritici — Maladie foliaire fréquente en années pluvieuses au Maroc.\n\nSYMPTÔMES : Taches allongées brun-verdâtre avec pointillés noirs (pycnides) sur les feuilles. Commence sur les feuilles basses et monte vers le haut. En forte attaque, dessèchement prématuré de la feuille drapeau = pertes importantes.\n\nCONDITIONS FAVORABLES : Pluies et rosées fréquentes, températures 15-22°C. Printemps humide au Maroc (Gharb, Loukkos, Saïss).\n\nTRAITEMENTS :\n- Tebuconazole : 0,75-1 L/ha\n- Epoxiconazole : 1 L/ha\n- Mélange strobilurine + triazole : meilleure efficacité\n\nCALENDRIER : Traitement préventif au stade épi 1 cm si conditions humides. Traitement curatif dès atteinte de la feuille drapeau.\n\nPRÉVENTION : Rotation céréales/légumineuses, semences traitées, variétés tolérantes (Arrehane), ne pas semer trop dense."
+  },
+  {
+    "culture": "blé",
+    "category": "maladie",
+    "region": null,
+    "source": "INRA Maroc",
+    "content": "Fusariose des épis du blé — Fusarium graminearum / F. culmorum — Maladie importante en fin de cycle au Maroc.\n\nSYMPTÔMES : Épillets blancs (blanchiment partiel ou total de l'épi) après floraison. Grains roses ou ridés, légers. Risque de mycotoxines (DON, zéaralénone) dans les grains — dangereux pour la santé humaine et animale.\n\nCONDITIONS FAVORABLES : Humidité et pluies pendant la floraison, températures 25-30°C. Fréquent après maïs en rotation.\n\nTRAITEMENTS : Traitement fongicide à la floraison (stade anthèse) :\n- Tebuconazole : 1 L/ha\n- Metconazole : 1,5 L/ha\nL'efficacité dépend du timing — traitement doit coïncider exactement avec la floraison.\n\nPRÉVENTION : Rotation sans maïs ou tournesol, labour pour enfouir les résidus, variétés tolérantes, semences traitées au thirame."
+  },
+  {
+    "culture": "tomate",
+    "category": "maladie",
+    "region": "souss-massa",
+    "source": "ONSSA / agrimaroc.net",
+    "content": "Mildiou de la tomate — Phytophthora infestans — Maladie dévastatrice, principale cause de pertes sur tomate au Maroc.\n\nSYMPTÔMES : Taches huileuses brunâtres sur feuilles, tiges et fruits. Face inférieure des feuilles : duvet blanc-grisâtre par temps humide. Progression très rapide, peut détruire une parcelle en 3-5 jours.\n\nCONDITIONS FAVORABLES : Températures 10-20°C la nuit, humidité > 90%, brouillards. Printemps et automne dans le Souss. Sous serre en été si ventilation insuffisante.\n\nTRAITEMENTS HOMOLOGUÉS AU MAROC :\n- Mancozèbe : 2,5 kg/ha — préventif, à répéter tous les 7-10 jours\n- Metalaxyl + Mancozèbe (Ridomil Gold) : 2,5 kg/ha — curatif\n- Cymoxanil + Mancozèbe (Curzate) : 2 kg/ha\n- Propamocarb : 2-3 L/ha\n- Dimethomorph : 1,2 kg/ha\n\nRÉSISTANCES : Rotation des matières actives obligatoire pour éviter les résistances. Ne pas répéter le Metalaxyl plus de 2 fois de suite.\n\nCALENDRIER : Traitement préventif dès la plantation si conditions favorables. En saison humide : tous les 7 jours. En saison sèche : tous les 14 jours.\n\nPRÉVENTION : Ventilation des serres, éviter l'irrigation par aspersion, paillage, plants sains certifiés."
+  },
+  {
+    "culture": "tomate",
+    "category": "maladie",
+    "region": null,
+    "source": "ONSSA / agrimaroc.net",
+    "content": "Botrytis (pourriture grise) de la tomate — Botrytis cinerea — Fongique ubiquiste, fréquent sous serre au Maroc.\n\nSYMPTÔMES : Pourriture molle brun-grisâtre avec duvet gris sur tiges, feuilles et fruits. Attaque souvent les cicatrices de taille ou d'effeuillage. Peut causer des pertes de 30-40% sous serre.\n\nCONDITIONS FAVORABLES : Humidité > 85%, températures 15-22°C, ventilation insuffisante. Fréquent après effeuillage ou taille en conditions humides.\n\nTRAITEMENTS :\n- Iprodione (Rovral) : 1,5 kg/ha\n- Boscalid + Pyraclostrobine (Signum) : 0,8 kg/ha\n- Fenhexamid (Teldor) : 1 kg/ha\n- Pyrimethanil : 1 L/ha\nAlternance obligatoire des matières actives.\n\nCALENDRIER : Traitement préventif après chaque taille/effeuillage. En saison humide : tous les 7-10 jours.\n\nPRÉVENTION : Réduire l'humidité (ventilation, chauffage la nuit), désinfection des outils de taille, éviter l'excès d'azote, éliminer les parties mortes."
+  },
+  {
+    "culture": "tomate",
+    "category": "maladie",
+    "region": null,
+    "source": "INRA Maroc / ONSSA",
+    "content": "TYLCV — Tomato Yellow Leaf Curl Virus — Virus de l'enroulement jaune de la tomate, très répandu au Maroc.\n\nSYMPTÔMES : Enroulement et jaunissement des feuilles (surtout les jeunes), nanisme de la plante, fleurs tombent sans nouer. Plante stérile si infectée jeune. Pas de traitement curatif.\n\nTRANSMISSION : Exclusivement par la mouche blanche Bemisia tabaci. Pas de transmission par contact ou outils.\n\nCONTRÔLE DE BEMISIA TABACI :\n- Imidaclopride (Confidor) : en traitement sol à la plantation\n- Spiromesifène (Oberon) : 0,8 L/ha\n- Abamectine : 0,6 L/ha\n- Huile de paraffine : répulsif\n- Pièges jaunes englués : surveillance\n\nPRÉVENTION (essentiel car pas de traitement curatif) :\n- Utiliser des variétés tolérantes TYLCV : Sahel, Taroudant F1, HM 7882, Mona\n- Filets anti-insectes sur les serres (mailles 50 mesh)\n- Éliminer les plantes malades rapidement\n- Éviter les plantations tardives en automne\n- Détruire les résidus après récolte\n\nVARIÉTÉS TOLÉRANTES DISPONIBLES AU MAROC : Typ Top, Josina, Barka, Falcón, Taroudant."
+  },
+  {
+    "culture": "agrumes",
+    "category": "maladie",
+    "region": "souss-massa",
+    "source": "INRA Agadir / ONSSA",
+    "content": "Gommose des agrumes — Phytophthora citrophthora / P. parasitica — Maladie racinaire et du tronc, très grave sur agrumes au Maroc.\n\nSYMPTÔMES : Exsudation de gomme sur le tronc et les grosses racines. Écorce brunâtre et nécrosée sous la gomme. Jaunissement progressif du feuillage, chute des feuilles, mort de l'arbre en 2-5 ans si non traité.\n\nCONDITIONS FAVORABLES : Sols lourds, mal drainés, excès d'eau, blessures sur le tronc. Plantation trop profonde (collet enterré). Fréquent dans le Souss-Massa et le Gharb.\n\nTRAITEMENTS :\n- Fosetyl-aluminium (Aliette) : 300 g/hl en pulvérisation sur tronc\n- Métalaxyl : badigeonnage du tronc après grattage des tissus nécrosés\n- Phosphonate de potassium : 300-500 mL/hl\n\nPROTOCOLE : Gratter les tissus nécrosés jusqu'au bois sain, désinfecter (eau de javel), badigeonner avec fongicide + mastic.\n\nPRÉVENTION : Greffer sur porte-greffe résistant (Citrange Troyer, Volkameriana), plantation avec collet au-dessus du sol, bon drainage, éviter les blessures au tronc."
+  },
+  {
+    "culture": "agrumes",
+    "category": "maladie",
+    "region": null,
+    "source": "ONSSA / agrimaroc.net",
+    "content": "Mouche des fruits — Ceratitis capitata — Principal ravageur des agrumes et fruits au Maroc.\n\nDÉGÂTS : La femelle pond dans les fruits mûrs ou mûrissants. Les larves (asticots) détruisent la pulpe de l'intérieur. Fruit tombe prématurément ou pourrit. Pertes de 30-80% sans traitement sur agrumes, pêches et abricots.\n\nSURVEILLANCE : Pièges alimentaires (Trimedlure pour mâles) ou pièges appât (protéine hydrolysée). Seuil : 10-15 captures/piège/semaine.\n\nTRAITEMENTS HOMOLOGUÉS AU MAROC :\n- Spinosad + protéine hydrolysée (Success Appât) : traitement appât sur 1/4 de l'arbre, efficace et sélectif\n- Malathion + protéine hydrolysée : traitement appât\n- Dimethoate : traitement foliaire total (DAR 21 jours)\n\nCALENDRIER : Pose des pièges 2 mois avant maturité. Traitement appât dès dépassement du seuil, renouveler tous les 7 jours.\n\nPRÉVENTION : Ramasser et détruire les fruits tombés, hygiène du verger, traitement appât précoce, filets de protection sur fruitiers isolés."
+  },
+  {
+    "culture": "pomme de terre",
+    "category": "maladie",
+    "region": null,
+    "source": "ONSSA / agrimaroc.net",
+    "content": "Mildiou de la pomme de terre — Phytophthora infestans — Maladie la plus grave sur pomme de terre au Maroc.\n\nSYMPTÔMES : Taches huileuses brunâtres sur feuilles, bord de feuilles noircit, duvet blanc sous les feuilles par temps humide. Tiges noircies et ramollies. Tubercules : pourriture brune-rougeâtre dans la chair.\n\nCONDITIONS FAVORABLES : Humidité > 90%, nuits fraîches (10-15°C), jours doux (15-22°C). Printemps au Maroc (mars-mai), automne pour culture d'arrière-saison.\n\nTRAITEMENTS (programme de protection) :\n- Mancozèbe : 2 kg/ha — préventif, tous les 7 jours\n- Cymoxanil + Mancozèbe : 2 kg/ha — curatif précoce\n- Metalaxyl + Mancozèbe (Ridomil) : 2,5 kg/ha — curatif\n- Propamocarb + Fluopicolide (Infinito) : 1,6 L/ha — haute performance\n- Amisulbrom : traitement alternatif anti-résistance\n\nIMPORTANT : Alterner les matières actives pour éviter les résistances. Ne pas utiliser Metalaxyl seul.\n\nCALENDRIER : Commencer les traitements 2-3 semaines après la levée. En conditions favorables : tous les 5-7 jours.\n\nPRÉVENTION : Plants certifiés, rotation (minimum 3 ans sans solanacées), buter les rangées pour protéger les tubercules."
+  },
+  {
+    "culture": "pomme de terre",
+    "category": "maladie",
+    "region": null,
+    "source": "agrimaroc.net / INRA Maroc",
+    "content": "Gale commune de la pomme de terre — Streptomyces scabies — Maladie bactérienne fréquente dans les sols sableux au Maroc.\n\nSYMPTÔMES : Lésions rugueuses, liégeuses sur la peau des tubercules. Aspect de gale en surface. Ne touche pas la chair, mais dévalue commercialement le produit. Perte qualité importante.\n\nCONDITIONS FAVORABLES : Sols neutres ou alcalins (pH > 7), secs pendant la tubérisation, température 20-22°C.\n\nPAS DE TRAITEMENT CURATIF EFFICACE EN COURS DE CULTURE.\n\nPRÉVENTION :\n- Utiliser des semences certifiées indemnes\n- Acidifier le sol (soufre, fumier acide) pour pH < 5,5\n- Irrigation régulière pendant la tubérisation (6 semaines après levée)\n- Rotation longue (4-5 ans)\n- Variétés tolérantes : Désirée, Spunta (moins sensibles)"
+  },
+  {
+    "culture": "vigne",
+    "category": "maladie",
+    "region": null,
+    "source": "ONSSA / agrimaroc.net",
+    "content": "Oïdium de la vigne — Erysiphe necator (Uncinula necator) — Principale maladie fongique de la vigne au Maroc.\n\nSYMPTÔMES : Feutrage blanc-grisâtre (duvet poudreux) sur toutes les parties vertes : feuilles, rameaux, grappes. Odeur caractéristique de pourriture. Baies fendues et pourries si attaque tardive. Cause des pertes importantes sur table et vinification.\n\nCONDITIONS FAVORABLES : Températures 25-35°C, humidité modérée (pas besoin de pluie). Période critique : floraison et formation des baies (mai-juillet au Maroc). Régions chaud-sèches : Meknès, Beni Mellal, Marrakech.\n\nTRAITEMENTS :\n- Soufre mouillable : 400-600 g/hl — traitement préventif de référence, économique\n- Myclobutanil : 40 mL/hl — curatif\n- Tebuconazole : 25 mL/hl\n- Quinoxyfène : traitement précoce\n- Spiroxamine : traitement de rattrapage\n\nCALENDRIER : 1er traitement au débourrement (stade 2-3 feuilles). Répéter tous les 10-14 jours jusqu'à fermeture des grappes. Minimum 5-6 traitements/saison.\n\nPRÉVENTION : Suppression des gourmands (porte-inoculum), bonne aération par taille, ne pas excéder la dose d'azote."
+  },
+  {
+    "culture": "vigne",
+    "category": "maladie",
+    "region": null,
+    "source": "ONSSA / agrimaroc.net",
+    "content": "Mildiou de la vigne — Plasmopara viticola — Maladie fongique grave sur vigne en années humides au Maroc.\n\nSYMPTÔMES : Taches huileuses (taches d'huile) sur face supérieure des feuilles, duvet blanc cotonneux face inférieure. Grappes : pourriture brune des baies (pourriture chocolat). Defoliation sévère en années pluvieuses.\n\nCONDITIONS FAVORABLES : Pluies + températures > 13°C. Contamination primaire quand pluviométrie > 10 mm et T > 11°C (règle des 3 × 10). Régions à printemps pluvieux : Gharb, Meknès.\n\nTRAITEMENTS :\n- Bouillie bordelaise : 400-600 g/hl — traitement préventif classique\n- Mancozèbe : 250 g/hl\n- Cymoxanil + Mancozèbe : traitement curatif 3-4 jours après pluie\n- Fosetyl-aluminium (Aliette) : systémique\n- Méfénoxam + Mancozèbe : haute efficacité\n\nCALENDRIER : 1er traitement au stade 3-5 feuilles si pluies. Répéter tous les 10 jours selon pression. Arrêt à véraison.\n\nPRÉVENTION : Palissage soigné pour aérer le feuillage, éviter l'irrigation par aspersion, ne pas planter en zones basses humides."
+  },
+  {
+    "culture": "tous",
+    "category": "maladie",
+    "region": null,
+    "source": "ONSSA Maroc",
+    "content": "Index phytosanitaire ONSSA Maroc — Guide d'utilisation des produits homologués.\n\nPour tout traitement phytosanitaire au Maroc, seuls les produits inscrits à l'index phytosanitaire de l'ONSSA sont autorisés légalement.\n\nCONSULTER L'INDEX : https://eservice.onssa.gov.ma/IndPesticide.aspx — recherche par culture, ravageur ou matière active.\n\nRÈGLES IMPORTANTES :\n- Respecter le DAR (Délai Avant Récolte) indiqué sur l'étiquette\n- Ne jamais dépasser les doses homologuées\n- Porter les équipements de protection (gants, masque, lunettes)\n- Ne pas traiter par vent fort ni avant pluie\n- Alterner les matières actives pour éviter les résistances\n- Stocker les produits dans un local fermé, hors de portée des enfants\n- Rincer le pulvérisateur 3 fois après usage\n\nPROGRAMMES AGRI-RAISONNÉS : Préférer les produits biologiques (soufre, cuivre, BT, huiles essentielles) quand disponibles. Intervenir selon les seuils économiques, pas systématiquement.\n\nCALENDRIER SPAA (Surveillance Phytosanitaire) : L'ONSSA publie des bulletins de veille régionaux — consulter la Direction Régionale de l'Agriculture (DRA) de votre province."
+  },
+  {
+    "culture": "tous",
+    "category": "maladie",
+    "region": null,
+    "source": "ONCA / INRA Maroc",
+    "content": "Diagnostic des maladies et ravageurs — Méthode pratique pour les agriculteurs marocains.\n\nSTEPS DE DIAGNOSTIC :\n1. Observer les symptômes : feuilles, tiges, fruits, racines — noter la couleur, la forme, la localisation\n2. Identifier la partie touchée : feuilles (taches), tiges (chancres), fruits (pourritures), racines (brunissement)\n3. Observer la progression : rapide (mildiou, botrytis) ou lente (verticilliose, gommose)\n4. Vérifier les conditions : humidité, pluies récentes, températures\n5. Regarder les insectes associés : pucerons (virus), mouches blanches (TYLCV), cochenilles\n\nQUAND CONSULTER :\n- Si le diagnostic est incertain : contacter le Centre de Travaux Agricoles (CTA) local\n- ONCA dispose de conseillers agricoles gratuits : appeler le 080 020 050 (numéro vert)\n- Envoyer des photos claires sur WhatsApp au conseiller de votre région\n\nERREURS FRÉQUENTES À ÉVITER :\n- Traiter sans identifier correctement le problème\n- Utiliser des produits non homologués ou de contrefaçon\n- Ignorer le DAR — risque de résidus dans les produits\n- Dépasser les doses — coût inutile et risque de phytotoxicité"
+  }
+]

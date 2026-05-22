@@ -6,6 +6,7 @@ import Groq from 'groq-sdk';
 import crypto from 'crypto';
 import { audioStore } from '@/lib/audioStore';
 import { getHistory, saveHistory, type ChatMessage } from '@/lib/conversationStore';
+import { retrieveContext } from '@/lib/ragStore';
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY || '' });
@@ -186,12 +187,20 @@ async function processMessageInBackground(
 
   console.log(`🧠 Requête LLM : "${userText}"`);
 
+  // Récupération du contexte RAG
+  const ragContext = await retrieveContext(userText);
+  const systemWithContext = ragContext
+    ? `${SYSTEM_INSTRUCTION}\n\nCONTEXTE DE LA BASE DE CONNAISSANCES (utilise ces informations en priorité) :\n${ragContext}`
+    : SYSTEM_INSTRUCTION;
+
+  if (ragContext) console.log('📖 Contexte RAG injecté.');
+
   // Construction du contenu Gemini (avec image si besoin)
   let llmResponseText = '';
   try {
     const model = genAI.getGenerativeModel({
       model: 'gemini-2.5-flash',
-      systemInstruction: SYSTEM_INSTRUCTION,
+      systemInstruction: systemWithContext,
     });
 
     // Contenu du message courant
