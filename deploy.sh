@@ -8,6 +8,7 @@ echo "🚀 Déploiement Fellah AI..."
 cd $APP_DIR
 
 echo "📥 Pull des dernières modifications..."
+git checkout package-lock.json
 git pull
 
 echo "📦 Installation des dépendances..."
