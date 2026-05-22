@@ -2,10 +2,8 @@
 
 ## 🔴 Bloquant pour la mise en production
 
-- [ ] **Vérification de signature Twilio** — sécuriser le webhook pour n'accepter que les requêtes Twilio
 - [ ] **Handler GET** — Twilio exige une réponse au GET pour valider l'URL du webhook
 - [ ] **Vérification de signature Twilio** — sécuriser le webhook pour n'accepter que les requêtes Twilio
-- [ ] **Handler GET** — Twilio exige une réponse au GET pour valider l'URL du webhook
 
 ## 🟠 Qualité produit
 

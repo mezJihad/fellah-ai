@@ -225,37 +225,56 @@ async function processMessageInBackground(sender: string, messageOrMediaUrl: str
 // ============================================================================
 // 📱 WEBHOOK WHATSAPP (Point d'entrée principal - Synchrone)
 // ============================================================================
+const TWIML_EMPTY = `<?xml version="1.0" encoding="UTF-8"?><Response></Response>`;
+const TWIML_HEADERS = { 'Content-Type': 'text/xml; charset=utf-8' };
+
+// ============================================================================
+// ✅ HANDLER GET — Twilio valide l'URL du webhook avec un GET
+// ============================================================================
+export async function GET() {
+  return new NextResponse(TWIML_EMPTY, { headers: TWIML_HEADERS });
+}
+
+// ============================================================================
+// 📱 WEBHOOK WHATSAPP (Point d'entrée principal - Synchrone)
+// ============================================================================
 export async function POST(request: Request) {
   try {
     // 1. Lire les données envoyées par WhatsApp
     const formData = await request.formData();
+
+    // 🔐 Vérification de signature Twilio
+    const authToken = process.env.TWILIO_AUTH_TOKEN || '';
+    const signature = request.headers.get('x-twilio-signature') || '';
+    const proto = request.headers.get('x-forwarded-proto') || 'https';
+    const host = request.headers.get('x-forwarded-host') || request.headers.get('host') || '';
+    const url = `${proto}://${host}/api/whatsapp-webhook`;
+
+    const params: Record<string, string> = {};
+    formData.forEach((value, key) => { params[key] = value.toString(); });
+
+    const isValid = twilio.validateRequest(authToken, signature, url, params);
+    if (!isValid) {
+      console.warn('⚠️ Signature Twilio invalide — requête rejetée');
+      return new NextResponse('Forbidden', { status: 403 });
+    }
+
     const incomingMsg = formData.get('Body') as string;
     const mediaUrl = formData.get('MediaUrl0') as string;
-    const sender = formData.get('From') as string; // Ex: "whatsapp:+212600000000"
+    const sender = formData.get('From') as string;
 
-    console.log(`📩 Nouveau message de ${sender}:`, mediaUrl ? 'Audio detecté' : `Texte ("${incomingMsg}")`);
+    console.log(`📩 Nouveau message de ${sender}:`, mediaUrl ? 'Audio détecté' : `Texte ("${incomingMsg}")`);
 
     const isIncomingAudio = !!mediaUrl;
-
-    // Reconstruit l'URL publique depuis les headers ngrok (pour servir l'audio TTS)
-    const proto = request.headers.get('x-forwarded-proto') || 'http';
-    const host = request.headers.get('x-forwarded-host') || request.headers.get('host') || 'localhost:3000';
     const baseUrl = `${proto}://${host}`;
 
     console.log(isIncomingAudio ? '🎙️ Message vocal détecté.' : '📝 Message texte reçu.');
 
-    // 🚀 Lancement de la tâche en arrière-plan SANS attendre sa fin (pas de "await")
+    // 🚀 Lancement de la tâche en arrière-plan SANS attendre sa fin
     processMessageInBackground(sender, isIncomingAudio ? mediaUrl : incomingMsg, isIncomingAudio, baseUrl).catch(console.error);
 
     // ⚡ RETOUR IMMÉDIAT À TWILIO (Évite le timeout de 15s)
-    let twimlResponse = `<?xml version="1.0" encoding="UTF-8"?>
-      <Response>
-      </Response>
-    `;
-
-    return new NextResponse(twimlResponse, {
-      headers: { 'Content-Type': 'text/xml; charset=utf-8' },
-    });
+    return new NextResponse(TWIML_EMPTY, { headers: TWIML_HEADERS });
 
   } catch (error) {
     console.error('❌ Erreur Webhook:', error);
