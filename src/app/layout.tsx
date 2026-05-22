@@ -13,8 +13,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Fellah AI - Votre Expert Agricole Vocal",
-  description: "Discutez en Darija avec une Intelligence Artificielle experte en agriculture marocaine, directement via WhatsApp.",
+  title: "Mgoun AI — Vos experts IA sur WhatsApp",
+  description: "Mgoun AI regroupe des assistants intelligents spécialisés, accessibles directement via WhatsApp en Darija, français ou arabe.",
 };
 
 export default function RootLayout({
