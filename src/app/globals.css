@@ -250,6 +250,23 @@ a { text-decoration: none; }
   opacity: 0.6;
 }
 
+/* QR CODE */
+.qr-wrapper {
+  background: white;
+  border-radius: 12px;
+  padding: 0.75rem;
+  width: 100px;
+  height: 100px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.qr-wrapper svg {
+  width: 100%;
+  height: 100%;
+}
+
 /* BUTTONS */
 .btn-whatsapp {
   display: inline-flex;

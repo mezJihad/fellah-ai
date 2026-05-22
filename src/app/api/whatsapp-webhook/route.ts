@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenerativeAI, type Part } from '@google/generative-ai';
 import OpenAI from 'openai';
 import twilio from 'twilio';
 import Groq from 'groq-sdk';
@@ -12,93 +12,109 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY || '' });
 const twilioClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY || '' });
 
-const SYSTEM_INSTRUCTION = "Tu es Fellah AI, un assistant agricole expert pour les agriculteurs marocains. IMPORTANT : 1) Réponds TOUJOURS dans la même langue que l'utilisateur (français, arabe, darija). 2) Comporte-toi comme un vrai expert : si une question nécessite du contexte pour être précise (ex: type de sol, culture en bour ou irriguée, variété, région), pose d'abord ces questions à l'agriculteur au lieu de donner une réponse générique. 3) Ne donne PAS de longs détails superflus. Sois concis et va droit au but.";
+const SYSTEM_INSTRUCTION = "Tu es Mgoun AGRI, un assistant agricole expert pour les agriculteurs marocains. IMPORTANT : 1) Réponds TOUJOURS dans la même langue que l'utilisateur (français, arabe, darija, anglais). 2) Comporte-toi comme un vrai expert : si une question nécessite du contexte pour être précise (ex: type de sol, culture en bour ou irriguée, variété, région), pose d'abord ces questions à l'agriculteur au lieu de donner une réponse générique. 3) Ne donne PAS de longs détails superflus. Sois concis et va droit au but.";
+
+const WELCOME_MESSAGE = `🌾 Bienvenue sur Mgoun AGRI !
+أهلاً بك في Mgoun AGRI ! 🌿
+Welcome to Mgoun AGRI!
+
+Je suis votre expert IA en agriculture marocaine.
+اسألني بالدارجة أو العربية أو الفرنسية أو الإنجليزية.
+Ask me anything in Darija, Arabic, French or English.`;
+
+// Voix Azure TTS par langue
+const TTS_VOICES = {
+  'ar-MA': { lang: 'ar-MA', name: 'ar-MA-JamalNeural' },
+  'fr-FR': { lang: 'fr-FR', name: 'fr-FR-HenriNeural' },
+  'en-US': { lang: 'en-US', name: 'en-US-GuyNeural' },
+};
+
+// ============================================================================
+// 🌍 DÉTECTION DE LANGUE
+// ============================================================================
+function detectLanguage(text: string): keyof typeof TTS_VOICES {
+  if (/[؀-ۿ]/.test(text)) return 'ar-MA';
+  if (/[àâäéèêëîïôùûüç]|\b(je|tu|il|nous|vous|ils|est|sont|avec|pour|sur|dans|par|les|des|une|qui|que|pas|plus|très|bien|mais)\b/i.test(text)) return 'fr-FR';
+  return 'en-US';
+}
 
 // ============================================================================
 // 🧠 FONCTION DE SECOURS (OPENAI)
-// Utilisée si Gemini n'est pas disponible (Erreur 503, etc.)
 // ============================================================================
 async function fallbackToOpenAI(history: ChatMessage[]): Promise<string> {
-  // Convertir l'historique Gemini vers le format OpenAI
-  const openaiHistory: any[] = [
-    { role: "system", content: SYSTEM_INSTRUCTION }
+  const openaiHistory: { role: string; content: string }[] = [
+    { role: 'system', content: SYSTEM_INSTRUCTION }
   ];
-
   for (const msg of history) {
     openaiHistory.push({
-      role: msg.role === "model" ? "assistant" : "user",
+      role: msg.role === 'model' ? 'assistant' : 'user',
       content: msg.parts[0].text
     });
   }
-
   const response = await openai.chat.completions.create({
-    model: "gpt-4o-mini",
-    messages: openaiHistory,
+    model: 'gpt-4o-mini',
+    messages: openaiHistory as never,
     max_tokens: 800,
   });
+  return response.choices[0].message.content || "Désolé, j'ai eu un problème. Veuillez réessayer.";
+}
 
-  return response.choices[0].message.content || "Désolé, j'ai eu un problème de connexion avec mon cerveau. Veuillez réessayer.";
+// ============================================================================
+// 📥 TÉLÉCHARGEMENT MEDIA TWILIO (audio + images)
+// ============================================================================
+async function downloadTwilioMedia(mediaUrl: string): Promise<Buffer> {
+  const authHeader = 'Basic ' + Buffer.from(
+    `${process.env.TWILIO_ACCOUNT_SID}:${process.env.TWILIO_AUTH_TOKEN}`
+  ).toString('base64');
+  const response = await fetch(mediaUrl, { headers: { Authorization: authHeader } });
+  if (!response.ok) throw new Error(`Échec téléchargement Twilio media: ${response.status}`);
+  return Buffer.from(await response.arrayBuffer());
 }
 
 // ============================================================================
 // 🎙️ TRANSCRIPTION AUDIO (GROQ WHISPER)
-// Télécharge l'audio depuis Twilio et le transcrit en texte
 // ============================================================================
 async function transcribeAudio(mediaUrl: string): Promise<string> {
-  const authHeader = 'Basic ' + Buffer.from(
-    `${process.env.TWILIO_ACCOUNT_SID}:${process.env.TWILIO_AUTH_TOKEN}`
-  ).toString('base64');
-
-  const response = await fetch(mediaUrl, {
-    headers: { 'Authorization': authHeader }
-  });
-
-  if (!response.ok) {
-    throw new Error(`Échec téléchargement audio Twilio: ${response.status}`);
-  }
-
-  const audioBuffer = await response.arrayBuffer();
-  const audioFile = new File([audioBuffer], 'audio.ogg', { type: 'audio/ogg' });
-
+  const buffer = await downloadTwilioMedia(mediaUrl);
+  const audioFile = new File([new Uint8Array(buffer)], 'audio.ogg', { type: 'audio/ogg' });
   const { text } = await groq.audio.transcriptions.create({
     file: audioFile,
     model: 'whisper-large-v3-turbo',
     response_format: 'json',
   });
-
   return text;
 }
 
 // ============================================================================
 // 🧹 NETTOYAGE MARKDOWN POUR TTS
-// Retire les symboles markdown qui seraient lus à voix haute (*, #, -, etc.)
 // ============================================================================
 function stripMarkdown(text: string): string {
   return text
-    .replace(/\*\*([^*]*)\*\*/g, '$1')          // **gras**
-    .replace(/\*([^*]*)\*/g, '$1')              // *italique*
-    .replace(/__([^_]*)__/g, '$1')              // __gras__
-    .replace(/_([^_]*)_/g, '$1')               // _italique_
-    .replace(/#{1,6}\s+/gm, '')                 // # titres
-    .replace(/`{1,3}[^`]*`{1,3}/g, '')         // `code`
-    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')   // [texte](url)
-    .replace(/^[-•*]\s+/gm, '')                 // - listes
-    .replace(/[\uD800-\uDFFF]./g, '')           // emojis (surrogate pairs)
-    .replace(/\n{3,}/g, '\n')                   // lignes vides excessives
+    .replace(/\*\*([^*]*)\*\*/g, '$1')
+    .replace(/\*([^*]*)\*/g, '$1')
+    .replace(/__([^_]*)__/g, '$1')
+    .replace(/_([^_]*)_/g, '$1')
+    .replace(/#{1,6}\s+/gm, '')
+    .replace(/`{1,3}[^`]*`{1,3}/g, '')
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+    .replace(/^[-•*]\s+/gm, '')
+    .replace(/[\uD800-\uDFFF]./g, '')
+    .replace(/\n{3,}/g, '\n')
     .trim();
 }
 
 // ============================================================================
-// 🔊 SYNTHÈSE VOCALE (AZURE TTS)
-// Génère un fichier MP3 depuis le texte et retourne son URL publique
+// 🔊 SYNTHÈSE VOCALE (AZURE TTS) — avec détection de langue
 // ============================================================================
 async function generateSpeech(text: string, baseUrl: string): Promise<string> {
   const cleanText = stripMarkdown(text);
+  const lang = detectLanguage(text);
+  const voice = TTS_VOICES[lang];
   const azureKey = process.env.AZURE_SPEECH_KEY || '';
   const azureRegion = process.env.AZURE_SPEECH_REGION || 'francecentral';
 
-  const ssml = `<speak version='1.0' xml:lang='ar-MA'>
-    <voice name='ar-MA-JamalNeural'>
+  const ssml = `<speak version='1.0' xml:lang='${voice.lang}'>
+    <voice name='${voice.name}'>
       ${cleanText.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}
     </voice>
   </speak>`;
@@ -116,131 +132,152 @@ async function generateSpeech(text: string, baseUrl: string): Promise<string> {
     }
   );
 
-  if (!response.ok) {
-    throw new Error(`Azure TTS: ${response.status} ${response.statusText}`);
-  }
+  if (!response.ok) throw new Error(`Azure TTS: ${response.status} ${response.statusText}`);
 
   const audioBuffer = await response.arrayBuffer();
   const id = `${Date.now()}-${crypto.randomBytes(4).toString('hex')}`;
-
   audioStore.set(id, Buffer.from(audioBuffer));
-
   return `${baseUrl}/api/audio/${id}`;
 }
 
 // ============================================================================
 // 📱 TRAITEMENT EN ARRIÈRE-PLAN
-// Fonction asynchrone qui s'occupe de l'IA et de l'envoi du message via Twilio
 // ============================================================================
-async function processMessageInBackground(sender: string, messageOrMediaUrl: string, isIncomingAudio: boolean, baseUrl: string) {
-  let transcription = messageOrMediaUrl;
+async function processMessageInBackground(
+  sender: string,
+  incomingText: string,
+  mediaUrl: string | null,
+  mediaContentType: string | null,
+  baseUrl: string
+) {
+  const isAudio = !!mediaUrl && !!mediaContentType?.startsWith('audio/');
+  const isImage = !!mediaUrl && !!mediaContentType?.startsWith('image/');
 
-  if (isIncomingAudio) {
-    console.log('🎙️ Audio reçu, téléchargement et transcription via Groq Whisper...');
+  let history = await getHistory(sender);
+  const isNewUser = history.length === 0;
+
+  // Message de bienvenue pour les nouveaux utilisateurs
+  if (isNewUser) {
     try {
-      transcription = await transcribeAudio(messageOrMediaUrl);
-      console.log(`📝 Transcription Groq: "${transcription}"`);
+      await twilioClient.messages.create({
+        body: WELCOME_MESSAGE,
+        from: process.env.WHATSAPP_PHONE_NUMBER,
+        to: sender,
+      });
+      console.log(`👋 Message de bienvenue envoyé à ${sender}`);
     } catch (err) {
-      console.error('❌ Erreur transcription Groq:', err);
-      transcription = "[Désolé, impossible de transcrire votre message vocal. Veuillez réessayer ou écrire votre question en texte.]";
+      console.error('❌ Erreur envoi bienvenue:', err);
     }
   }
-  let llmResponseText = "";
-  
-  console.log(`🧠 Envoi de la requête au LLM : "${transcription}"`);
 
-  // Récupération de l'historique depuis Supabase
-  let history = await getHistory(sender);
-  
-  // Ajouter le nouveau message
-  history.push({ role: 'user', parts: [{ text: transcription }] });
+  let userText = incomingText;
 
-  // Limiter l'historique aux 10 derniers messages pour éviter les requêtes trop lourdes
-  if (history.length > 10) history = history.slice(history.length - 10);
+  // Transcription audio
+  if (isAudio && mediaUrl) {
+    console.log('🎙️ Transcription audio via Groq Whisper...');
+    try {
+      userText = await transcribeAudio(mediaUrl);
+      console.log(`📝 Transcription: "${userText}"`);
+    } catch (err) {
+      console.error('❌ Erreur transcription:', err);
+      userText = '[Impossible de transcrire le message vocal. Veuillez réécrire en texte.]';
+    }
+  }
 
+  console.log(`🧠 Requête LLM : "${userText}"`);
+
+  // Construction du contenu Gemini (avec image si besoin)
+  let llmResponseText = '';
   try {
-    // Tentative avec le cerveau principal : Gemini (Maintenant la version Flash performante)
-    const model = genAI.getGenerativeModel({ 
-      model: "gemini-2.5-flash",
-      systemInstruction: SYSTEM_INSTRUCTION
+    const model = genAI.getGenerativeModel({
+      model: 'gemini-2.5-flash',
+      systemInstruction: SYSTEM_INSTRUCTION,
     });
+
+    // Contenu du message courant
+    const currentParts: Part[] = [];
+    if (userText) currentParts.push({ text: userText });
+
+    if (isImage && mediaUrl && mediaContentType) {
+      console.log('🖼️ Analyse image via Gemini Vision...');
+      const imageBuffer = await downloadTwilioMedia(mediaUrl);
+      currentParts.push({ inlineData: { mimeType: mediaContentType, data: imageBuffer.toString('base64') } });
+      if (!userText) currentParts.push({ text: 'Analyse cette image.' });
+    }
+
+    const contents = [
+      ...history,
+      { role: 'user' as const, parts: currentParts },
+    ];
 
     const result = await model.generateContent({
-      contents: history,
-      generationConfig: { maxOutputTokens: 800 }
+      contents,
+      generationConfig: { maxOutputTokens: 800 },
     });
-    
-    llmResponseText = result.response.text();
-    console.log('✅ Réponse Gemini générée en arrière-plan.');
 
+    llmResponseText = result.response.text();
+    console.log('✅ Réponse Gemini générée.');
   } catch (error) {
-    console.error('❌ Erreur Gemini (Activation du Fallback vers OpenAI):', error);
+    console.error('❌ Erreur Gemini (fallback OpenAI):', error);
     try {
-      // Tentative avec le cerveau de secours : OpenAI
-      llmResponseText = await fallbackToOpenAI(history);
-      console.log('✅ Réponse de secours OpenAI générée en arrière-plan.');
+      const historyWithCurrent: ChatMessage[] = [
+        ...history,
+        { role: 'user', parts: [{ text: userText || '[Image envoyée]' }] },
+      ];
+      llmResponseText = await fallbackToOpenAI(historyWithCurrent);
+      console.log('✅ Réponse OpenAI fallback générée.');
     } catch (fallbackError) {
-      console.error('❌ Erreur critique : OpenAI a également échoué', fallbackError);
-      llmResponseText = "Désolé, nos cerveaux (Gemini et OpenAI) sont temporairement indisponibles. Veuillez réessayer dans un instant.";
+      console.error('❌ Erreur critique OpenAI:', fallbackError);
+      llmResponseText = 'Désolé, le service est temporairement indisponible. Veuillez réessayer.';
     }
   }
-  
-  // Sauvegarder la réponse dans Supabase
+
+  // Sauvegarde dans l'historique (texte uniquement, pas l'image)
+  const savedUserText = isImage ? `[Photo envoyée] ${userText || ''}`.trim() : userText;
+  history.push({ role: 'user', parts: [{ text: savedUserText }] });
   history.push({ role: 'model', parts: [{ text: llmResponseText }] });
+  if (history.length > 10) history = history.slice(history.length - 10);
   await saveHistory(sender, history);
 
-  // 4. Déterminer le format de réponse (Texte ou Audio+Texte)
+  // Génération audio si message entrant était audio
   let generatedAudioUrl: string | null = null;
-  if (isIncomingAudio) {
-    console.log('🔊 Génération de la réponse vocale avec Azure TTS...');
+  if (isAudio) {
+    console.log('🔊 Génération TTS...');
     try {
       generatedAudioUrl = await generateSpeech(llmResponseText, baseUrl);
       console.log(`🔊 Audio généré : ${generatedAudioUrl}`);
     } catch (err) {
-      console.error('❌ Erreur Azure TTS (réponse texte uniquement):', err);
+      console.error('❌ Erreur Azure TTS:', err);
     }
-  } else {
-    console.log('📱 Entrée Texte détectée. Réponse en texte uniquement.');
   }
 
-  // 5. Envoi proactif via l'API REST de Twilio
+  // Envoi via Twilio
   try {
-    const messageOptions: any = {
+    const messageOptions: { body: string; from: string | undefined; to: string; mediaUrl?: string[] } = {
       body: llmResponseText,
       from: process.env.WHATSAPP_PHONE_NUMBER,
-      to: sender
+      to: sender,
     };
-    
-    if (generatedAudioUrl) {
-        messageOptions.mediaUrl = [generatedAudioUrl];
-    }
-    
+    if (generatedAudioUrl) messageOptions.mediaUrl = [generatedAudioUrl];
     await twilioClient.messages.create(messageOptions);
-    console.log(`📤 Message envoyé asynchrone à ${sender}`);
+    console.log(`📤 Message envoyé à ${sender}`);
   } catch (error) {
-    console.error('❌ Erreur Twilio lors de l\'envoi asynchrone:', error);
+    console.error('❌ Erreur envoi Twilio:', error);
   }
 }
 
-// ============================================================================
-// 📱 WEBHOOK WHATSAPP (Point d'entrée principal - Synchrone)
 // ============================================================================
 const TWIML_EMPTY = `<?xml version="1.0" encoding="UTF-8"?><Response></Response>`;
 const TWIML_HEADERS = { 'Content-Type': 'text/xml; charset=utf-8' };
 
-// ============================================================================
-// ✅ HANDLER GET — Twilio valide l'URL du webhook avec un GET
-// ============================================================================
+// ✅ HANDLER GET — validation URL webhook par Twilio
 export async function GET() {
   return new NextResponse(TWIML_EMPTY, { headers: TWIML_HEADERS });
 }
 
-// ============================================================================
-// 📱 WEBHOOK WHATSAPP (Point d'entrée principal - Synchrone)
-// ============================================================================
+// 📱 WEBHOOK WHATSAPP
 export async function POST(request: Request) {
   try {
-    // 1. Lire les données envoyées par WhatsApp
     const formData = await request.formData();
 
     // 🔐 Vérification de signature Twilio
@@ -259,23 +296,21 @@ export async function POST(request: Request) {
       return new NextResponse('Forbidden', { status: 403 });
     }
 
-    const incomingMsg = formData.get('Body') as string;
-    const mediaUrl = formData.get('MediaUrl0') as string;
+    const incomingText = (formData.get('Body') as string) || '';
+    const mediaUrl = (formData.get('MediaUrl0') as string) || null;
+    const mediaContentType = (formData.get('MediaContentType0') as string) || null;
     const sender = formData.get('From') as string;
 
-    console.log(`📩 Nouveau message de ${sender}:`, mediaUrl ? 'Audio détecté' : `Texte ("${incomingMsg}")`);
+    const mediaType = mediaContentType?.startsWith('audio/') ? '🎙️ Audio'
+      : mediaContentType?.startsWith('image/') ? '🖼️ Image'
+      : '📝 Texte';
+    console.log(`📩 ${mediaType} de ${sender}`);
 
-    const isIncomingAudio = !!mediaUrl;
     const baseUrl = `${proto}://${host}`;
 
-    console.log(isIncomingAudio ? '🎙️ Message vocal détecté.' : '📝 Message texte reçu.');
+    processMessageInBackground(sender, incomingText, mediaUrl, mediaContentType, baseUrl).catch(console.error);
 
-    // 🚀 Lancement de la tâche en arrière-plan SANS attendre sa fin
-    processMessageInBackground(sender, isIncomingAudio ? mediaUrl : incomingMsg, isIncomingAudio, baseUrl).catch(console.error);
-
-    // ⚡ RETOUR IMMÉDIAT À TWILIO (Évite le timeout de 15s)
     return new NextResponse(TWIML_EMPTY, { headers: TWIML_HEADERS });
-
   } catch (error) {
     console.error('❌ Erreur Webhook:', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });

@@ -1,4 +1,9 @@
-export default function Home() {
+import QRCode from 'qrcode';
+
+const WHATSAPP_URL = 'https://wa.me/14155238886';
+
+export default async function Home() {
+  const qrSvg = await QRCode.toString(WHATSAPP_URL, { type: 'svg', margin: 1 });
   return (
     <main>
       {/* NAV */}
@@ -39,8 +44,9 @@ export default function Home() {
               <p className="expert-description">
                 Expert en agriculture marocaine. Conseils sur les traitements, engrais, irrigation, variétés locales et calendriers agricoles — en Darija, français ou arabe.
               </p>
+              <div className="qr-wrapper" dangerouslySetInnerHTML={{ __html: qrSvg }} />
               <a
-                href="https://wa.me/14155238886"
+                href={WHATSAPP_URL}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="btn-whatsapp"
