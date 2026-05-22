@@ -24,7 +24,7 @@ Ask me anything in Darija, Arabic, French or English.`;
 
 // Voix Azure TTS par langue
 const TTS_VOICES = {
-  'ar-MA': { lang: 'ar-MA', name: 'ar-MA-JamalNeural' },
+  'ar-MA': { lang: 'ar-MA', name: 'ar-MA-MounaNeural' },
   'fr-FR': { lang: 'fr-FR', name: 'fr-FR-HenriNeural' },
   'en-US': { lang: 'en-US', name: 'en-US-GuyNeural' },
 };
