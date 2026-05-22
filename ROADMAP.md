@@ -2,8 +2,8 @@
 
 ## 🔴 Bloquant pour la mise en production
 
-- [ ] **SSL + domaine** — installer Caddy, pointer mgounai.com vers le serveur Hetzner (89.167.46.161)
-- [ ] **Mettre à jour webhook Twilio** — remplacer ngrok par https://mgounai.com/api/whatsapp-webhook
+- [ ] **Vérification de signature Twilio** — sécuriser le webhook pour n'accepter que les requêtes Twilio
+- [ ] **Handler GET** — Twilio exige une réponse au GET pour valider l'URL du webhook
 - [ ] **Vérification de signature Twilio** — sécuriser le webhook pour n'accepter que les requêtes Twilio
 - [ ] **Handler GET** — Twilio exige une réponse au GET pour valider l'URL du webhook
 
@@ -37,4 +37,6 @@
 - [x] Nettoyage markdown avant TTS (étoiles, #, tirets)
 - [x] Historique de conversation par utilisateur
 - [x] Persistance des conversations — Supabase (accounts + conversations)
-- [x] Déploiement — Hetzner CX23 Helsinki, Node.js 22, PM2
+- [x] Déploiement — Hetzner CX23 Helsinki, Node.js 22, PM2, Caddy SSL
+- [x] Domaine mgounai.com + HTTPS automatique via Caddy/Let's Encrypt
+- [x] Webhook Twilio mis à jour → https://mgounai.com/api/whatsapp-webhook
