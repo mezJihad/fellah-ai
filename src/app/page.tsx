@@ -1,4 +1,5 @@
 import QRCode from 'qrcode';
+import { ChatWidget } from '@/components/ChatWidget';
 
 const WHATSAPP_URL = 'https://wa.me/14155238886';
 
@@ -94,6 +95,9 @@ export default async function Home() {
           <p>© 2026 Mgoun AI · Maroc</p>
         </div>
       </footer>
+
+      {/* CHAT WIDGET */}
+      <ChatWidget />
     </main>
   );
 }
