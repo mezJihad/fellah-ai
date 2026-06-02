@@ -15,6 +15,11 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "Mgoun AI — Vos experts IA",
   description: "Discutez avec vos experts IA marocains en Darija, français ou arabe — agriculture, santé et bien plus.",
+  icons: {
+    icon: '/favicon.svg',
+    shortcut: '/favicon.svg',
+    apple: '/favicon.svg',
+  },
 };
 
 export default function RootLayout({

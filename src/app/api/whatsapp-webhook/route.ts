@@ -3,20 +3,96 @@ import twilio from 'twilio';
 import Groq from 'groq-sdk';
 import crypto from 'crypto';
 import { audioStore } from '@/lib/audioStore';
-import { getHistory } from '@/lib/conversationStore';
+import { getAccountExpert, setAccountExpert } from '@/lib/conversationStore';
 import { EXPERTS, runAgent } from '@/lib/agentCore';
 import { checkAccess, incrementMessageCount } from '@/lib/subscriptionStore';
 
 const twilioClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY || '' });
 
-const WELCOME_MESSAGE = `🌾 Bienvenue sur Mgoun AGRI !
-أهلاً بك في Mgoun AGRI ! 🌿
-Welcome to Mgoun AGRI!
+const MENU_MESSAGE = `🌾 *Mgoun AI* — Vos experts IA
 
-Je suis votre expert IA en agriculture marocaine.
-اسألني بالدارجة أو العربية أو الفرنسية أو الإنجليزية.
-Ask me anything in Darija, Arabic, French or English.`;
+Choisissez votre expert :
+
+1️⃣  *Mgoun News* 📰
+   Actualité marocaine & Bourse
+
+2️⃣  *Mgoun AGRI* 🌾
+   Agriculture marocaine
+
+3️⃣  *Mgoun Invest* 📈
+   Investissement & entrepreneuriat
+
+4️⃣  *Mgoun Equilibre* 🧘
+   Développement personnel & équilibre de vie
+
+5️⃣  *Mgoun Nutri* 🥗
+   Nutrition & alimentation marocaine
+
+6️⃣  *Mgoun Éveil* 🌱
+   Activités petite enfance (2-3 ans)
+
+7️⃣  *Mgoun Évasion* 🌍
+   Travel Planner depuis le Maroc
+
+8️⃣  *Mgoun Hikaya* 🌙
+   Histoires pour enfants
+
+Répondez *1* à *8*
+اكتب من *1* إلى *8*
+
+_(Envoyez 0 à tout moment pour revenir ici)_`;
+
+const EXPERT_WELCOME: Record<string, string> = {
+  news: `✅ Je suis *Mgoun News* 📰, votre rédacteur en chef IA.
+
+Envoyez *briefing* pour votre résumé de l'actualité marocaine du jour, ou posez directement une question (Bourse, économie, politique…).
+اكتب *briefing* للحصول على ملخص أخبار اليوم، أو اطرح سؤالك مباشرة.
+
+_(Envoyez 0 pour changer d'expert)_`,
+  agri: `✅ Parfait ! Je suis *Mgoun AGRI* 🌾, votre expert en agriculture marocaine.
+
+Posez votre question en Darija, français, arabe ou anglais.
+اسألني بالدارجة، العربية، الفرنسية أو الإنجليزية.
+
+_(Envoyez 0 pour changer d'expert)_`,
+  invest: `✅ Bienvenue ! Je suis *Mgoun Invest* 📈, votre mentor en investissement et entrepreneuriat au Maroc.
+
+Partagez votre projet, secteur ou question.
+شاركني مشروعك أو سؤالك.
+
+_(Envoyez 0 pour changer d'expert)_`,
+  equilibre: `✅ Je suis *Mgoun Equilibre* 🧘, votre coach en développement personnel et équilibre de vie.
+
+Partagez ce qui vous préoccupe — professionnellement ou personnellement.
+شاركني ما يشغل بالك — مهنياً أو شخصياً.
+
+_(Envoyez 0 pour changer d'expert)_`,
+  nutri: `✅ Je suis *Mgoun Nutri* 🥗, votre expert en nutrition adaptée au quotidien marocain.
+
+Partagez vos habitudes alimentaires, vos envies, ou une situation concrète (repas au restaurant, couscous du vendredi…).
+شاركني عاداتك الغذائية أو سؤالك.
+
+_(Envoyez 0 pour changer d'expert)_`,
+  eveil: `✅ Je suis *Mgoun Éveil* 🌱, votre expert en petite enfance (2-3 ans).
+
+Dites-moi ce dont vous avez besoin : une activité rapide, un conseil, ou comment gérer une situation avec votre enfant.
+قولي ما تحتاج : نشاط سريع، نصيحة، أو كيف تتعامل مع موقف مع طفلك.
+
+_(Envoyez 0 pour changer d'expert)_`,
+  evasion: `✅ Je suis *Mgoun Évasion* 🌍, votre Travel Planner depuis le Maroc.
+
+Partagez vos envies : destination, durée, type de voyage, composition du groupe.
+شاركني أفكارك : الوجهة، المدة، نوع الرحلة، من سيرافقك.
+
+_(Envoyez 0 pour changer d'expert)_`,
+  hikaya: `✅ Je suis *Mgoun Hikaya* 🌙, votre conteur marocain pour les petits.
+
+Dites-moi juste : une histoire s'il vous plaît ✨
+قولي : حكاية من فضلك ✨
+
+_(Envoyez 0 pour changer d'expert)_`,
+};
 
 const TTS_VOICES = {
   'ar-MA': { lang: 'ar-MA', name: 'ar-MA-MounaNeural' },
@@ -99,6 +175,27 @@ async function generateSpeech(text: string, baseUrl: string): Promise<string> {
   return `${baseUrl}/api/audio/${id}`;
 }
 
+function parseExpertSelection(text: string): string | null {
+  const t = text.trim().toLowerCase();
+  if (t === '1' || t === 'news' || t === 'akhbar' || t === 'أخبار' || t === 'actualité') return 'news';
+  if (t === '2' || t === 'agri' || t === 'فلاحة' || t === 'agriculture') return 'agri';
+  if (t === '3' || t === 'invest' || t === 'استثمار' || t === 'investissement') return 'invest';
+  if (t === '4' || t === 'equilibre' || t === 'équilibre' || t === 'توازن' || t === 'coach') return 'equilibre';
+  if (t === '5' || t === 'nutri' || t === 'nutrition' || t === 'alimentation' || t === 'تغذية') return 'nutri';
+  if (t === '6' || t === 'eveil' || t === 'éveil' || t === 'enfant' || t === 'montessori' || t === 'طفل') return 'eveil';
+  if (t === '7' || t === 'evasion' || t === 'évasion' || t === 'travel' || t === 'سفر' || t === 'voyage') return 'evasion';
+  if (t === '8' || t === 'hikaya' || t === 'حكاية' || t === 'histoire' || t === 'conte') return 'hikaya';
+  return null;
+}
+
+async function sendMenu(twilioTo: string) {
+  await twilioClient.messages.create({
+    body: MENU_MESSAGE,
+    from: process.env.WHATSAPP_PHONE_NUMBER,
+    to: twilioTo,
+  });
+}
+
 async function processMessageInBackground(
   sender: string,         // normalized E.164 phone (+212...) — used for DB lookups
   twilioTo: string,       // original Twilio format (whatsapp:+212...) — used for sending
@@ -109,22 +206,37 @@ async function processMessageInBackground(
 ) {
   const isAudio = !!mediaUrl && !!mediaContentType?.startsWith('audio/');
   const isImage = !!mediaUrl && !!mediaContentType?.startsWith('image/');
+  const trimmedText = incomingText.trim();
 
-  const history = await getHistory(sender, 'agri');
-  if (history.length === 0) {
-    try {
+  // ── Commande reset (0, menu, retour…) ────────────────────────────────────
+  const isReset = /^(0|menu|مينو|retour|رجع|وقف|accueil|aide|help)$/i.test(trimmedText);
+  if (isReset) {
+    await setAccountExpert(sender, null);
+    await sendMenu(twilioTo);
+    return;
+  }
+
+  // ── Sélection / vérification de l'expert actif ───────────────────────────
+  let expertId = await getAccountExpert(sender);
+
+  if (!expertId) {
+    const selected = parseExpertSelection(trimmedText);
+    if (selected) {
+      await setAccountExpert(sender, selected);
       await twilioClient.messages.create({
-        body: WELCOME_MESSAGE,
+        body: EXPERT_WELCOME[selected],
         from: process.env.WHATSAPP_PHONE_NUMBER,
         to: twilioTo,
       });
-      console.log(`👋 Message de bienvenue envoyé à ${sender}`);
-    } catch (err) {
-      console.error('❌ Erreur envoi bienvenue:', err);
+      console.log(`🎯 Expert sélectionné : ${selected} pour ${sender}`);
+    } else {
+      await sendMenu(twilioTo);
     }
+    return;
   }
 
-  let userText = incomingText;
+  // ── Traitement du message vers l'expert actif ─────────────────────────────
+  let userText = trimmedText;
   if (isAudio && mediaUrl) {
     console.log('🎙️ Transcription audio via Groq Whisper...');
     try {
@@ -157,7 +269,7 @@ async function processMessageInBackground(
     return;
   }
 
-  const expert = EXPERTS['agri'];
+  const expert = EXPERTS[expertId];
   const llmResponseText = await runAgent(expert, sender, userText, imageData);
 
   await incrementMessageCount(sender);
@@ -181,7 +293,7 @@ async function processMessageInBackground(
     };
     if (generatedAudioUrl) messageOptions.mediaUrl = [generatedAudioUrl];
     await twilioClient.messages.create(messageOptions);
-    console.log(`📤 Message envoyé à ${twilioTo}`);
+    console.log(`📤 [${expertId}] Message envoyé à ${twilioTo}`);
   } catch (error) {
     console.error('❌ Erreur envoi Twilio:', error);
   }

@@ -10,7 +10,9 @@ export default async function Home() {
       {/* NAV */}
       <nav className="navbar">
         <div className="container navbar-inner">
-          <Link href="/" className="nav-logo" style={{ textDecoration: 'none' }}>
+          <Link href="/" className="nav-logo" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/favicon.svg" alt="" width={28} height={28} style={{ borderRadius: '6px' }} />
             Mgoun <span>AI</span>
           </Link>
           <Link href="/" className="btn-chat-nav">

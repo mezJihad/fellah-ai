@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 40">
+  <!-- Icon -->
+  <rect x="0" y="4" width="32" height="32" rx="7" fill="#16a34a"/>
+  <polyline
+    points="5,30 13,11 17,19 21,11 29,30"
+    fill="none"
+    stroke="white"
+    stroke-width="3"
+    stroke-linejoin="round"
+    stroke-linecap="round"
+  />
+  <!-- Wordmark -->
+  <text
+    x="42" y="28"
+    font-family="system-ui, -apple-system, sans-serif"
+    font-size="22"
+    font-weight="800"
+    letter-spacing="-0.5"
+    fill="#1e293b"
+  >Mgoun</text>
+  <text
+    x="113" y="28"
+    font-family="system-ui, -apple-system, sans-serif"
+    font-size="22"
+    font-weight="800"
+    letter-spacing="-0.5"
+    fill="#16a34a"
+  > AI</text>
+</svg>

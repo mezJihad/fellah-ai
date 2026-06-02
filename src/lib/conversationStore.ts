@@ -37,6 +37,26 @@ export async function saveHistory(phone: string, expertId: string, messages: Cha
     );
 }
 
+// ── Expert actif sur WhatsApp (par téléphone) ───────────────────────────────
+
+export async function getAccountExpert(phone: string): Promise<string | null> {
+  const accountId = await getOrCreateAccount(phone);
+  const { data } = await supabase
+    .from('accounts')
+    .select('current_expert_id')
+    .eq('id', accountId)
+    .single();
+  return (data?.current_expert_id as string | null) ?? null;
+}
+
+export async function setAccountExpert(phone: string, expertId: string | null): Promise<void> {
+  const accountId = await getOrCreateAccount(phone);
+  await supabase
+    .from('accounts')
+    .update({ current_expert_id: expertId })
+    .eq('id', accountId);
+}
+
 // ── Lookup par user_id Supabase Auth (Web) ───────────────────────────────────
 
 export async function getOrCreateAccountByUserId(userId: string): Promise<string> {

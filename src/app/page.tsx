@@ -8,11 +8,22 @@ import styles from './page.module.css';
 
 const EXPERTS = [
   {
+    id: 'news',
+    name: 'Mgoun News',
+    icon: '📰',
+    description: 'Briefing quotidien de l\'actualité marocaine et internationale — Bourse de Casablanca, MASI, économie, politique, tech.',
+    available: true,
+    welcomeMessage: "Bonjour ! Voici votre briefing Mgoun News 📰. Que souhaitez-vous approfondir ?",
+    quickReplies: ["Résumé de la Bourse", "L'actu Startup Maroc", "Les gros titres Éco", "Politique & Société"],
+  },
+  {
     id: 'agri',
     name: 'Mgoun AGRI',
     icon: '🌾',
     description: 'Expert en agriculture marocaine — traitements, engrais, irrigation, variétés locales, calendriers agricoles. Posez vos questions en Darija, français ou arabe.',
     available: true,
+    welcomeMessage: "Salam ! Je suis Mgoun AGRI 🌾, votre expert en agriculture marocaine. Que puis-je faire pour vous aujourd'hui ?",
+    quickReplies: ["Traitement d'une maladie", "Calendrier d'irrigation", "Engrais recommandés", "Prix du marché"],
   },
   {
     id: 'invest',
@@ -20,8 +31,54 @@ const EXPERTS = [
     icon: '📈',
     description: 'Mentor stratégique en investissement et entrepreneuriat au Maroc — success stories locales, feuilles de route concrètes, réalités du marché marocain.',
     available: true,
+    welcomeMessage: "Bonjour. Quelle est votre priorité actuelle pour vos projets au Maroc ?",
+    quickReplies: ["Financement & Subventions", "Analyser un secteur", "Inspiration & Success Stories", "Lancer une startup"],
   },
-  { id: 'soon1', name: 'Bientôt', icon: '💡', description: '', available: false },
+  {
+    id: 'equilibre',
+    name: 'Mgoun Equilibre',
+    icon: '🧘',
+    description: 'Master Coach en développement personnel, leadership et équilibre de vie — questions puissantes, baby steps, ancrage marocain.',
+    available: true,
+    welcomeMessage: "Bonjour. Qu'est-ce qui vous préoccupe en ce moment — pro ou perso ?",
+    quickReplies: ["Gérer mon stress", "Mieux organiser mon temps", "Trouver l'équilibre pro/perso", "Prendre une grande décision"],
+  },
+  {
+    id: 'nutri',
+    name: 'Mgoun Nutri',
+    icon: '🥗',
+    description: 'Expert en nutrition et rééquilibrage alimentaire — gastronomie marocaine, anti-gaspi, conseils restaurant, cuisine familiale.',
+    available: true,
+    welcomeMessage: "Salam ! Parlons de vos habitudes alimentaires. Par où voulez-vous commencer ?",
+    quickReplies: ["Rééquilibrer mon alimentation", "Conseils pour le couscous du vendredi", "Manger sainement au restaurant", "Menu famille anti-gaspi"],
+  },
+  {
+    id: 'eveil',
+    name: 'Mgoun Éveil',
+    icon: '🌱',
+    description: 'Expert petite enfance 2-3 ans — activités Montessori avec objets du quotidien, parentalité bienveillante, alternatives aux écrans.',
+    available: true,
+    welcomeMessage: "Salut ! Prêt(e) pour occuper votre petit(e) ? Quel est votre niveau d'énergie aujourd'hui ?",
+    quickReplies: ["Je suis épuisé(e) 🛋️", "J'ai un peu de temps ⏱️", "On veut bouger ! 🏃", "Gérer une grosse colère"],
+  },
+  {
+    id: 'evasion',
+    name: 'Mgoun Évasion',
+    icon: '🌍',
+    description: 'Travel Planner IA — itinéraires sur mesure depuis le Maroc, slow travel, familles, visas, liaisons aériennes réelles.',
+    available: true,
+    welcomeMessage: "Bonjour ! Parlons de votre prochain voyage. Où rêvez-vous d'aller ?",
+    quickReplies: ["Voyage famille au Maroc", "Europe sans visa", "Destination exotique", "Slow travel pas cher"],
+  },
+  {
+    id: 'hikaya',
+    name: 'Mgoun Hikaya',
+    icon: '🌙',
+    description: 'Conteur marocain pour enfants — histoires apaisantes pour le coucher, décors naturels du Maroc, animaux attachants.',
+    available: true,
+    welcomeMessage: "Bonsoir ! C'est l'heure de l'histoire ✨ Où se déroule notre aventure ce soir ?",
+    quickReplies: ["Dans le désert de Merzouga 🏜️", "Dans une forêt de cèdres 🌲", "Au bord de l'océan 🌊", "Dans une palmeraie du Sud 🌴"],
+  },
 ];
 
 type Message = { role: 'user' | 'assistant'; text: string; imageUrl?: string };
@@ -53,6 +110,7 @@ export default function ChatPage() {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isRecording, setIsRecording] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
+  const [loadedExperts, setLoadedExperts] = useState<Set<string>>(new Set());
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -75,6 +133,11 @@ export default function ChatPage() {
     return () => subscription.unsubscribe();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [supabase]);
+
+  useEffect(() => {
+    if (user) loadHistory(selectedExpert);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -138,9 +201,26 @@ export default function ChatPage() {
     setPendingPhone(''); setCurrentPhone(''); setAuthMode('login');
   }
 
+  async function loadHistory(expertId: string) {
+    if (loadedExperts.has(expertId)) return;
+    setLoadedExperts(prev => new Set([...prev, expertId]));
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+    try {
+      const res = await fetch(`/api/history?expertId=${expertId}`, {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      const data = await res.json();
+      if (data.messages?.length > 0) {
+        setMessages(prev => ({ ...prev, [expertId]: data.messages }));
+      }
+    } catch { /* non-blocking */ }
+  }
+
   async function logout() {
     await supabase.auth.signOut();
     setMessages({});
+    setLoadedExperts(new Set());
   }
 
   // ── Chat helpers ──────────────────────────────────────────────────────────
@@ -239,6 +319,37 @@ export default function ChatPage() {
     }
   }
 
+  async function handleQuickReply(text: string) {
+    if (loading) return;
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+    setMessages(prev => ({
+      ...prev,
+      [selectedExpert]: [...(prev[selectedExpert] ?? []), { role: 'user', text }],
+    }));
+    setLoading(true);
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ expertId: selectedExpert, message: text }),
+      });
+      const data = await res.json();
+      setMessages(prev => ({
+        ...prev,
+        [selectedExpert]: [...(prev[selectedExpert] ?? []), { role: 'assistant', text: data.reply ?? data.error }],
+      }));
+    } catch {
+      setMessages(prev => ({
+        ...prev,
+        [selectedExpert]: [...(prev[selectedExpert] ?? []), { role: 'assistant', text: 'Erreur réseau. Veuillez réessayer.' }],
+      }));
+    } finally {
+      setLoading(false);
+      setTimeout(() => inputRef.current?.focus(), 50);
+    }
+  }
+
   function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
   }
@@ -246,6 +357,7 @@ export default function ChatPage() {
   function selectExpert(id: string) {
     setSelectedExpert(id);
     setMobileView('chat');
+    loadHistory(id);
     setTimeout(() => inputRef.current?.focus(), 100);
   }
 
@@ -329,7 +441,12 @@ export default function ChatPage() {
               ←
             </button>
           )}
-          <span className={styles.logo}>🌾 Mgoun AI</span>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/favicon.svg" alt="Mgoun AI" width={26} height={26} className={styles.logoIcon} />
+          <span className={`${styles.logo} ${mobileView === 'chat' ? styles.logoHiddenMobile : ''}`}>Mgoun AI</span>
+          {mobileView === 'chat' && (
+            <span className={styles.expertNameMobile}>{expert.icon} {expert.name}</span>
+          )}
         </div>
         <div className={styles.headerRight}>
           <span className={styles.userEmail}>{user.email}</span>
@@ -367,7 +484,7 @@ export default function ChatPage() {
         </aside>
 
         {/* ── Main conversation ── */}
-        <main className={`${styles.main} ${mobileView === 'list' ? styles.hidden : ''}`}>
+        <main className={`${styles.main} ${mobileView === 'chat' ? styles.mainVisible : ''}`}>
 
           {/* Messages */}
           <div className={styles.messages}>
@@ -375,8 +492,25 @@ export default function ChatPage() {
               <div className={styles.welcome}>
                 <div className={styles.welcomeIcon}>{expert.icon}</div>
                 <h2 className={styles.welcomeName}>{expert.name}</h2>
-                <p className={styles.welcomeDesc}>{expert.description}</p>
-                <p className={styles.welcomeHint}>Posez votre première question ci-dessous</p>
+                {expert.welcomeMessage && (
+                  <div className={`${styles.bubble} ${styles.bubbleAssistant} ${styles.welcomeBubble}`}>
+                    <pre className={styles.bubbleText}>{expert.welcomeMessage}</pre>
+                  </div>
+                )}
+                {expert.quickReplies && expert.quickReplies.length > 0 && (
+                  <div className={styles.quickReplies}>
+                    {expert.quickReplies.map(reply => (
+                      <button
+                        key={reply}
+                        className={styles.quickReplyBtn}
+                        onClick={() => handleQuickReply(reply)}
+                        disabled={loading}
+                      >
+                        {reply}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             ) : (
               currentMessages.map((msg, i) => (
