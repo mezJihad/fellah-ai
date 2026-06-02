@@ -13,8 +13,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Mgoun AI — Vos experts IA sur WhatsApp",
-  description: "Mgoun AI regroupe des assistants intelligents spécialisés, accessibles directement via WhatsApp en Darija, français ou arabe.",
+  title: "Mgoun AI — Vos experts IA",
+  description: "Discutez avec vos experts IA marocains en Darija, français ou arabe — agriculture, santé et bien plus.",
 };
 
 export default function RootLayout({

@@ -1,7 +1,11 @@
 {
   "permissions": {
     "allow": [
-      "WebSearch"
+      "WebSearch",
+      "Bash(psql --version)",
+      "Bash(node -e ' *)",
+      "Bash(npx supabase *)",
+      "Bash(npx tsc *)"
     ]
   }
 }

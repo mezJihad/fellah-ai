@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { EXPERTS, runAgent } from '@/lib/agentCore';
 import { supabase } from '@/lib/supabase';
+import { getOrCreateAccountByUserId } from '@/lib/conversationStore';
 
 export async function POST(request: Request) {
   try {
@@ -17,9 +18,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Token invalide' }, { status: 401 });
     }
 
-    const { expertId, message } = await request.json();
+    const { expertId, message, imageData } = await request.json();
 
-    if (!expertId || !message?.trim()) {
+    if (!expertId || (!message?.trim() && !imageData)) {
       return NextResponse.json({ error: 'Paramètres manquants' }, { status: 400 });
     }
 
@@ -28,9 +29,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Expert inconnu' }, { status: 400 });
     }
 
-    // La session est liée à l'utilisateur authentifié, pas à un UUID aléatoire
-    const sessionId = `web_${expertId}_${user.id}`;
-    const reply = await runAgent(expert, sessionId, message.trim());
+    const accountId = await getOrCreateAccountByUserId(user.id);
+    const reply = await runAgent(expert, '', message?.trim() ?? '', imageData ?? undefined, { accountId });
 
     return NextResponse.json({ reply });
   } catch (error) {

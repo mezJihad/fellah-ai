@@ -100,7 +100,8 @@ async function generateSpeech(text: string, baseUrl: string): Promise<string> {
 }
 
 async function processMessageInBackground(
-  sender: string,
+  sender: string,         // normalized E.164 phone (+212...) — used for DB lookups
+  twilioTo: string,       // original Twilio format (whatsapp:+212...) — used for sending
   incomingText: string,
   mediaUrl: string | null,
   mediaContentType: string | null,
@@ -109,13 +110,13 @@ async function processMessageInBackground(
   const isAudio = !!mediaUrl && !!mediaContentType?.startsWith('audio/');
   const isImage = !!mediaUrl && !!mediaContentType?.startsWith('image/');
 
-  const history = await getHistory(sender);
+  const history = await getHistory(sender, 'agri');
   if (history.length === 0) {
     try {
       await twilioClient.messages.create({
         body: WELCOME_MESSAGE,
         from: process.env.WHATSAPP_PHONE_NUMBER,
-        to: sender,
+        to: twilioTo,
       });
       console.log(`👋 Message de bienvenue envoyé à ${sender}`);
     } catch (err) {
@@ -148,7 +149,7 @@ async function processMessageInBackground(
       await twilioClient.messages.create({
         body: access.reason!,
         from: process.env.WHATSAPP_PHONE_NUMBER,
-        to: sender,
+        to: twilioTo,
       });
     } catch (err) {
       console.error('❌ Erreur envoi message refus:', err);
@@ -176,11 +177,11 @@ async function processMessageInBackground(
     const messageOptions: { body: string; from: string | undefined; to: string; mediaUrl?: string[] } = {
       body: llmResponseText,
       from: process.env.WHATSAPP_PHONE_NUMBER,
-      to: sender,
+      to: twilioTo,
     };
     if (generatedAudioUrl) messageOptions.mediaUrl = [generatedAudioUrl];
     await twilioClient.messages.create(messageOptions);
-    console.log(`📤 Message envoyé à ${sender}`);
+    console.log(`📤 Message envoyé à ${twilioTo}`);
   } catch (error) {
     console.error('❌ Erreur envoi Twilio:', error);
   }
@@ -216,14 +217,16 @@ export async function POST(request: Request) {
     const incomingText = (formData.get('Body') as string) || '';
     const mediaUrl = (formData.get('MediaUrl0') as string) || null;
     const mediaContentType = (formData.get('MediaContentType0') as string) || null;
-    const sender = formData.get('From') as string;
+    const rawSender = formData.get('From') as string;
+    // Normalize: strip "whatsapp:" prefix so we store E.164 (+212...) in DB
+    const sender = rawSender.replace('whatsapp:', '');
 
     const mediaType = mediaContentType?.startsWith('audio/') ? '🎙️ Audio'
       : mediaContentType?.startsWith('image/') ? '🖼️ Image'
       : '📝 Texte';
-    console.log(`📩 ${mediaType} de ${sender}`);
+    console.log(`📩 ${mediaType} de ${rawSender}`);
 
-    processMessageInBackground(sender, incomingText, mediaUrl, mediaContentType, `${proto}://${host}`).catch(console.error);
+    processMessageInBackground(sender, rawSender, incomingText, mediaUrl, mediaContentType, `${proto}://${host}`).catch(console.error);
 
     return new NextResponse(TWIML_EMPTY, { headers: TWIML_HEADERS });
   } catch (error) {

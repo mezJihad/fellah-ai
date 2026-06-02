@@ -1,103 +1,460 @@
-import QRCode from 'qrcode';
-import { ChatWidget } from '@/components/ChatWidget';
+'use client';
 
-const WHATSAPP_URL = 'https://wa.me/14155238886';
+import { useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
+import { createBrowserClient } from '@/lib/supabase-browser';
+import type { User } from '@supabase/supabase-js';
+import styles from './page.module.css';
 
-export default async function Home() {
-  const qrSvg = await QRCode.toString(WHATSAPP_URL, { type: 'svg', margin: 1 });
+const EXPERTS = [
+  {
+    id: 'agri',
+    name: 'Mgoun AGRI',
+    icon: '🌾',
+    description: 'Expert en agriculture marocaine — traitements, engrais, irrigation, variétés locales, calendriers agricoles. Posez vos questions en Darija, français ou arabe.',
+    available: true,
+  },
+  {
+    id: 'invest',
+    name: 'Mgoun Invest',
+    icon: '📈',
+    description: 'Mentor stratégique en investissement et entrepreneuriat au Maroc — success stories locales, feuilles de route concrètes, réalités du marché marocain.',
+    available: true,
+  },
+  { id: 'soon1', name: 'Bientôt', icon: '💡', description: '', available: false },
+];
+
+type Message = { role: 'user' | 'assistant'; text: string; imageUrl?: string };
+type AuthMode = 'login' | 'signup' | 'confirm' | 'confirm-phone-change';
+
+export default function ChatPage() {
+  const [supabase] = useState(() => createBrowserClient());
+
+  // ── Auth ──────────────────────────────────────────────────────────────────
+  const [user, setUser] = useState<User | null>(null);
+  const [authMode, setAuthMode] = useState<AuthMode>('login');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [phone, setPhone] = useState('');
+  const [authError, setAuthError] = useState('');
+  const [authLoading, setAuthLoading] = useState(false);
+  const [pendingPhone, setPendingPhone] = useState('');
+  const [currentPhone, setCurrentPhone] = useState('');
+  const pendingPhoneRef = useRef('');
+
+  // ── Chat ──────────────────────────────────────────────────────────────────
+  const [selectedExpert, setSelectedExpert] = useState('agri');
+  const [mobileView, setMobileView] = useState<'list' | 'chat'>('list');
+  const [messages, setMessages] = useState<Record<string, Message[]>>({});
+  const [input, setInput] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [imageData, setImageData] = useState<{ mimeType: string; base64: string } | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [isRecording, setIsRecording] = useState(false);
+  const [isTranscribing, setIsTranscribing] = useState(false);
+
+  const bottomRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+
+  // ── Auth listeners ────────────────────────────────────────────────────────
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
+      setUser(session?.user ?? null);
+      if (session?.user && pendingPhoneRef.current) {
+        const p = pendingPhoneRef.current;
+        pendingPhoneRef.current = '';
+        linkPhone(session.access_token, p);
+      }
+    });
+    return () => subscription.unsubscribe();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [supabase]);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, loading, selectedExpert]);
+
+  // ── Auth helpers ──────────────────────────────────────────────────────────
+  function switchMode(mode: AuthMode) {
+    setAuthMode(mode);
+    setAuthError('');
+    setPassword('');
+    setConfirmPassword('');
+  }
+
+  async function linkPhone(accessToken: string, phoneToLink: string, confirmChange = false) {
+    try {
+      const res = await fetch('/api/auth/link', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+        body: JSON.stringify({ phone: phoneToLink, confirmChange }),
+      });
+      const data = await res.json();
+      if (data.needsConfirmation) {
+        setCurrentPhone(data.currentPhone);
+        setPendingPhone(phoneToLink);
+        setAuthMode('confirm-phone-change');
+      } else if (data.error === 'number_taken') {
+        setAuthError('Ce numéro est déjà utilisé par un autre compte.');
+      }
+    } catch { /* non-blocking */ }
+  }
+
+  async function login() {
+    setAuthError('');
+    setAuthLoading(true);
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) setAuthError('Email ou mot de passe incorrect.');
+    setAuthLoading(false);
+  }
+
+  async function signup() {
+    setAuthError('');
+    if (password !== confirmPassword) { setAuthError('Les mots de passe ne correspondent pas.'); return; }
+    if (password.length < 6) { setAuthError('Le mot de passe doit contenir au moins 6 caractères.'); return; }
+    setAuthLoading(true);
+    const { data, error } = await supabase.auth.signUp({ email, password });
+    if (error) { setAuthError(error.message); setAuthLoading(false); return; }
+    const trimmedPhone = phone.trim();
+    if (data.session) {
+      if (trimmedPhone) await linkPhone(data.session.access_token, trimmedPhone);
+    } else {
+      if (trimmedPhone) pendingPhoneRef.current = trimmedPhone;
+      setAuthMode('confirm');
+    }
+    setAuthLoading(false);
+  }
+
+  async function confirmPhoneChange() {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+    await linkPhone(session.access_token, pendingPhone, true);
+    setPendingPhone(''); setCurrentPhone(''); setAuthMode('login');
+  }
+
+  async function logout() {
+    await supabase.auth.signOut();
+    setMessages({});
+  }
+
+  // ── Chat helpers ──────────────────────────────────────────────────────────
+  async function sendMessage() {
+    const text = input.trim();
+    if ((!text && !imageData) || loading) return;
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+
+    const capturedImage = imageData;
+    const capturedPreview = imagePreview;
+    setInput('');
+    setImageData(null);
+    setImagePreview(null);
+    setMessages(prev => ({
+      ...prev,
+      [selectedExpert]: [...(prev[selectedExpert] ?? []), { role: 'user', text: text || '', imageUrl: capturedPreview ?? undefined }],
+    }));
+    setLoading(true);
+
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ expertId: selectedExpert, message: text || '', imageData: capturedImage ?? undefined }),
+      });
+      const data = await res.json();
+      setMessages(prev => ({
+        ...prev,
+        [selectedExpert]: [...(prev[selectedExpert] ?? []), { role: 'assistant', text: data.reply ?? data.error }],
+      }));
+    } catch {
+      setMessages(prev => ({
+        ...prev,
+        [selectedExpert]: [...(prev[selectedExpert] ?? []), { role: 'assistant', text: 'Erreur réseau. Veuillez réessayer.' }],
+      }));
+    } finally {
+      setLoading(false);
+      setTimeout(() => inputRef.current?.focus(), 50);
+    }
+  }
+
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const dataUrl = ev.target?.result as string;
+      const base64 = dataUrl.split(',')[1];
+      setImageData({ mimeType: file.type, base64 });
+      setImagePreview(dataUrl);
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  }
+
+  async function toggleRecording() {
+    if (isRecording) {
+      mediaRecorderRef.current?.stop();
+      return;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream);
+      const chunks: BlobPart[] = [];
+      recorder.ondataavailable = e => chunks.push(e.data);
+      recorder.onstop = async () => {
+        stream.getTracks().forEach(t => t.stop());
+        setIsRecording(false);
+        setIsTranscribing(true);
+        try {
+          const blob = new Blob(chunks, { type: recorder.mimeType });
+          const ext = recorder.mimeType.includes('ogg') ? 'ogg' : 'webm';
+          const audioFile = new File([blob], `audio.${ext}`, { type: blob.type });
+          const { data: { session } } = await supabase.auth.getSession();
+          if (!session) return;
+          const form = new FormData();
+          form.append('audio', audioFile);
+          const res = await fetch('/api/transcribe', {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${session.access_token}` },
+            body: form,
+          });
+          const data = await res.json();
+          if (data.text) setInput(prev => (prev ? prev + ' ' + data.text : data.text));
+        } finally {
+          setIsTranscribing(false);
+          setTimeout(() => inputRef.current?.focus(), 50);
+        }
+      };
+      mediaRecorderRef.current = recorder;
+      recorder.start();
+      setIsRecording(true);
+    } catch {
+      alert('Impossible d\'accéder au microphone.');
+    }
+  }
+
+  function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+  }
+
+  function selectExpert(id: string) {
+    setSelectedExpert(id);
+    setMobileView('chat');
+    setTimeout(() => inputRef.current?.focus(), 100);
+  }
+
+  // ── Dérivés ───────────────────────────────────────────────────────────────
+  const currentMessages = messages[selectedExpert] ?? [];
+  const expert = EXPERTS.find(e => e.id === selectedExpert)!;
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // AUTH GATE
+  // ══════════════════════════════════════════════════════════════════════════
+  if (!user) {
+    return (
+      <div className={styles.authLayout}>
+        <div className={styles.authCard}>
+          <div className={styles.authLogo}>🌾</div>
+          <h1 className={styles.authTitle}>Mgoun AI</h1>
+
+          {authMode === 'confirm' ? (
+            <>
+              <p className={styles.authDesc}>
+                Un lien de confirmation a été envoyé à <strong>{email}</strong>.<br />
+                Cliquez dessus puis revenez vous connecter.
+              </p>
+              <button className={styles.switchBtn} onClick={() => switchMode('login')}>
+                Retour à la connexion
+              </button>
+            </>
+          ) : authMode === 'confirm-phone-change' ? (
+            <>
+              <p className={styles.authDesc}>
+                Ce compte est déjà lié au <strong>{currentPhone}</strong>.<br />
+                Remplacer par <strong>{pendingPhone}</strong> ?
+              </p>
+              {authError && <p className={styles.authError}>{authError}</p>}
+              <button className={styles.submitBtn} onClick={confirmPhoneChange}>Confirmer</button>
+              <button className={styles.switchBtn} onClick={() => { setPendingPhone(''); setCurrentPhone(''); switchMode('login'); }}>Annuler</button>
+            </>
+          ) : (
+            <>
+              <p className={styles.authDesc}>
+                {authMode === 'login' ? 'Connectez-vous pour discuter avec nos experts' : 'Créez votre compte gratuitement'}
+              </p>
+              <input className={styles.authInput} type="email" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} autoComplete="email" />
+              <input className={styles.authInput} type="password" placeholder="Mot de passe" value={password} onChange={e => setPassword(e.target.value)} autoComplete={authMode === 'login' ? 'current-password' : 'new-password'} onKeyDown={e => authMode === 'login' && e.key === 'Enter' && login()} />
+              {authMode === 'signup' && (
+                <>
+                  <input className={styles.authInput} type="password" placeholder="Confirmer le mot de passe" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} autoComplete="new-password" />
+                  <input className={styles.authInput} type="tel" placeholder="Numéro WhatsApp (facultatif) ex: +212612345678" value={phone} onChange={e => setPhone(e.target.value)} autoComplete="tel" onKeyDown={e => e.key === 'Enter' && signup()} />
+                </>
+              )}
+              {authError && <p className={styles.authError}>{authError}</p>}
+              <button className={styles.submitBtn} onClick={authMode === 'login' ? login : signup} disabled={authLoading || !email || !password}>
+                {authLoading ? '…' : authMode === 'login' ? 'Se connecter' : 'Créer mon compte'}
+              </button>
+              <p className={styles.switchText}>
+                {authMode === 'login' ? 'Pas encore de compte ?' : 'Déjà un compte ?'}
+                {' '}
+                <button className={styles.switchBtn} onClick={() => switchMode(authMode === 'login' ? 'signup' : 'login')}>
+                  {authMode === 'login' ? 'Créer un compte' : 'Se connecter'}
+                </button>
+              </p>
+            </>
+          )}
+
+          <Link href="/home" className={styles.homeLink}>Découvrir Mgoun AI →</Link>
+        </div>
+      </div>
+    );
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // CHAT INTERFACE
+  // ══════════════════════════════════════════════════════════════════════════
   return (
-    <main>
-      {/* NAV */}
-      <nav className="navbar">
-        <div className="container navbar-inner">
-          <span className="nav-logo">Mgoun <span>AI</span></span>
-          <span className="nav-tagline">Vos experts IA sur WhatsApp</span>
+    <div className={styles.layout}>
+      {/* ── Header ── */}
+      <header className={styles.header}>
+        <div className={styles.headerLeft}>
+          {mobileView === 'chat' && (
+            <button className={styles.backBtn} onClick={() => setMobileView('list')} aria-label="Retour">
+              ←
+            </button>
+          )}
+          <span className={styles.logo}>🌾 Mgoun AI</span>
         </div>
-      </nav>
-
-      {/* HERO */}
-      <section className="hero-section">
-        <div className="container hero-inner animate-fade-in">
-          <div className="badge">🤖 Plateforme d&apos;experts IA marocains</div>
-          <h1 className="hero-title">
-            Des experts IA <br />
-            <span>dans votre poche</span>
-          </h1>
-          <p className="hero-description">
-            Mgoun AI regroupe des assistants intelligents spécialisés, accessibles directement via WhatsApp en Darija, français ou arabe.
-          </p>
+        <div className={styles.headerRight}>
+          <span className={styles.userEmail}>{user.email}</span>
+          <button className={styles.logoutBtn} onClick={logout}>Déconnexion</button>
+          <Link href="/home" className={styles.homeBtn}>À propos</Link>
         </div>
-      </section>
+      </header>
 
-      {/* EXPERTS GRID */}
-      <section className="experts-section">
-        <div className="container">
-          <h2 className="section-title animate-fade-in">Nos experts</h2>
-          <div className="experts-grid">
+      {/* ── Body ── */}
+      <div className={styles.body}>
 
-            {/* MGOUN AGRI — disponible */}
-            <div className="expert-card available animate-fade-in">
-              <div className="expert-card-header">
-                <div className="expert-icon">🌾</div>
-                <span className="expert-badge available-badge">Disponible</span>
+        {/* ── Sidebar experts ── */}
+        <aside className={`${styles.sidebar} ${mobileView === 'chat' ? styles.hidden : ''}`}>
+          <div className={styles.sidebarTitle}>Experts</div>
+          {EXPERTS.map(exp => (
+            <button
+              key={exp.id}
+              className={`${styles.expertItem} ${exp.id === selectedExpert ? styles.expertActive : ''} ${!exp.available ? styles.expertDisabled : ''}`}
+              onClick={() => exp.available && selectExpert(exp.id)}
+              disabled={!exp.available}
+            >
+              <span className={styles.expertItemIcon}>{exp.icon}</span>
+              <div className={styles.expertItemInfo}>
+                <span className={styles.expertItemName}>{exp.name}</span>
+                {!exp.available && <span className={styles.expertItemSoon}>Bientôt disponible</span>}
+                {exp.available && messages[exp.id]?.length > 0 && (
+                  <span className={styles.expertItemPreview}>
+                    {messages[exp.id][messages[exp.id].length - 1].text.slice(0, 40)}…
+                  </span>
+                )}
               </div>
-              <h3 className="expert-name">Mgoun AGRI</h3>
-              <p className="expert-description">
-                Expert en agriculture marocaine. Conseils sur les traitements, engrais, irrigation, variétés locales et calendriers agricoles — en Darija, français ou arabe.
-              </p>
-              <div className="qr-wrapper" dangerouslySetInnerHTML={{ __html: qrSvg }} />
-              <a
-                href={WHATSAPP_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn-whatsapp"
-              >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z"/>
-                </svg>
-                Discuter sur WhatsApp
-              </a>
-            </div>
+              {exp.available && <span className={styles.chevron}>›</span>}
+            </button>
+          ))}
+        </aside>
 
-            {/* COMING SOON 1 */}
-            <div className="expert-card coming-soon animate-fade-in delay-100">
-              <div className="expert-card-header">
-                <div className="expert-icon muted">🔬</div>
-                <span className="expert-badge soon-badge">Bientôt disponible</span>
+        {/* ── Main conversation ── */}
+        <main className={`${styles.main} ${mobileView === 'list' ? styles.hidden : ''}`}>
+
+          {/* Messages */}
+          <div className={styles.messages}>
+            {currentMessages.length === 0 ? (
+              <div className={styles.welcome}>
+                <div className={styles.welcomeIcon}>{expert.icon}</div>
+                <h2 className={styles.welcomeName}>{expert.name}</h2>
+                <p className={styles.welcomeDesc}>{expert.description}</p>
+                <p className={styles.welcomeHint}>Posez votre première question ci-dessous</p>
               </div>
-              <h3 className="expert-name muted">Mgoun ???</h3>
-              <p className="expert-description muted">
-                Un nouvel expert IA rejoint bientôt la plateforme Mgoun AI.
-              </p>
-              <div className="btn-soon">Bientôt disponible</div>
-            </div>
-
-            {/* COMING SOON 2 */}
-            <div className="expert-card coming-soon animate-fade-in delay-200">
-              <div className="expert-card-header">
-                <div className="expert-icon muted">💡</div>
-                <span className="expert-badge soon-badge">Bientôt disponible</span>
+            ) : (
+              currentMessages.map((msg, i) => (
+                <div key={i} className={`${styles.bubble} ${msg.role === 'user' ? styles.bubbleUser : styles.bubbleAssistant}`}>
+                  {msg.imageUrl && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={msg.imageUrl} alt="Image envoyée" className={styles.bubbleImage} />
+                  )}
+                  {msg.text && <pre className={styles.bubbleText}>{msg.text}</pre>}
+                </div>
+              ))
+            )}
+            {loading && (
+              <div className={`${styles.bubble} ${styles.bubbleAssistant}`}>
+                <span className={styles.typing}>···</span>
               </div>
-              <h3 className="expert-name muted">Mgoun ???</h3>
-              <p className="expert-description muted">
-                Un nouvel expert IA rejoint bientôt la plateforme Mgoun AI.
-              </p>
-              <div className="btn-soon">Bientôt disponible</div>
-            </div>
-
+            )}
+            <div ref={bottomRef} />
           </div>
-        </div>
-      </section>
 
-      {/* FOOTER */}
-      <footer className="footer">
-        <div className="container">
-          <p>© 2026 Mgoun AI · Maroc</p>
-        </div>
-      </footer>
+          {/* Input */}
+          <div className={styles.inputArea}>
+            {/* Image preview */}
+            {imagePreview && (
+              <div className={styles.imagePreviewWrap}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={imagePreview} alt="Aperçu" className={styles.imagePreviewThumb} />
+                <button className={styles.imageRemoveBtn} onClick={() => { setImageData(null); setImagePreview(null); }} aria-label="Supprimer l'image">✕</button>
+              </div>
+            )}
+            <div className={styles.inputRow}>
+              {/* File picker */}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                style={{ display: 'none' }}
+                onChange={handleFileChange}
+              />
+              <button
+                className={styles.attachBtn}
+                onClick={() => fileInputRef.current?.click()}
+                disabled={loading}
+                aria-label="Joindre une image"
+                title="Joindre une image"
+              >
+                📎
+              </button>
 
-      {/* CHAT WIDGET */}
-      <ChatWidget />
-    </main>
+              <textarea
+                ref={inputRef}
+                className={styles.input}
+                value={input}
+                onChange={e => setInput(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder={`Message à ${expert.name}… (Entrée pour envoyer)`}
+                rows={1}
+                disabled={loading}
+              />
+
+              {/* Mic button */}
+              <button
+                className={`${styles.micBtn} ${isRecording ? styles.micBtnRecording : ''}`}
+                onClick={toggleRecording}
+                disabled={loading || isTranscribing}
+                aria-label={isRecording ? 'Arrêter l\'enregistrement' : 'Enregistrer un audio'}
+                title={isRecording ? 'Arrêter' : 'Enregistrer'}
+              >
+                {isTranscribing ? '…' : isRecording ? '⏹' : '🎤'}
+              </button>
+
+              <button className={styles.sendBtn} onClick={sendMessage} disabled={loading || (!input.trim() && !imageData)}>
+                ↑
+              </button>
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
   );
 }

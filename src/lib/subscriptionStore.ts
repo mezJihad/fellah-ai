@@ -6,7 +6,7 @@ const MSG_SUSPENDED =
   "Votre accès Mgoun AI a été suspendu. Contactez-nous sur mgounai.com pour plus d'informations.";
 
 const MSG_LIMIT_REACHED =
-  `Vous avez atteint la limite de votre abonnement gratuit (${FREE_TIER_LIMIT} messages/mois). 🌾 Passez à l'abonnement Pro sur mgounai.com pour continuer sans limite.`;
+  `Vous avez atteint la limite de votre abonnement gratuit (${FREE_TIER_LIMIT} messages/mois). 🌾\nCréez un compte sur mgounai.com pour continuer vos discussions.\nUtilisez votre numéro de téléphone lors de l'inscription pour récupérer votre historique.`;
 
 function currentMonth(): string {
   const d = new Date();
@@ -14,9 +14,10 @@ function currentMonth(): string {
 }
 
 export async function checkAccess(phone: string): Promise<{ allowed: boolean; reason?: string }> {
+  const normalized = phone.replace('whatsapp:', '');
   const { data, error } = await supabase
     .from('accounts')
-    .upsert({ phone }, { onConflict: 'phone' })
+    .upsert({ phone: normalized }, { onConflict: 'phone' })
     .select('subscription_tier, subscription_status, monthly_message_count, message_month')
     .single();
 
@@ -42,11 +43,12 @@ export async function checkAccess(phone: string): Promise<{ allowed: boolean; re
 
 export async function incrementMessageCount(phone: string): Promise<void> {
   const month = currentMonth();
+  const normalized = phone.replace('whatsapp:', '');
 
   const { data } = await supabase
     .from('accounts')
     .select('id, message_count, monthly_message_count, message_month')
-    .eq('phone', phone)
+    .eq('phone', normalized)
     .single();
 
   if (!data) return;
