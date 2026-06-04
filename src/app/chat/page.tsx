@@ -41,6 +41,15 @@ const EXPERTS = [
     quickReplies: ["Gérer mon stress", "Mieux organiser mon temps", "Trouver l'équilibre pro/perso", "Prendre une grande décision"],
   },
   {
+    id: 'musique',
+    name: 'Mgoun Musique',
+    icon: '🎵',
+    description: 'Expert musical marocain et international — recommandations en Pop, Rock, Jazz, Gnawa, Chaâbi, Rap marocain, musique andalouse et fusion.',
+    available: true,
+    welcomeMessage: "Salam ! 🎵 Je suis Mgoun Musique, ton guide musical. Tu veux qu'on explore un genre précis, une humeur particulière… ou tu me laisses les commandes ?",
+    quickReplies: ["Surprends-moi 🎲", "Playlist thématique 🎧", "Musique marocaine 🎶", "Pop & Rock 🎸", "Ambiance détente 🌙"],
+  },
+  {
     id: 'nutri',
     name: 'Mgoun Nutri',
     icon: '🥗',
@@ -87,8 +96,105 @@ const EXPERTS = [
   },
 ];
 
-type Message = { role: 'user' | 'assistant'; text: string; imageUrl?: string };
+type MusicTrack = { artist: string; title: string };
+type Message = { role: 'user' | 'assistant'; text: string; imageUrl?: string; tracks?: MusicTrack[] };
 type AuthMode = 'login' | 'signup' | 'confirm';
+
+function parseMusicBlock(text: string): { cleanText: string; tracks: MusicTrack[] } {
+  const match = text.match(/```json\s*([\s\S]*?)```/);
+  if (!match) return { cleanText: text, tracks: [] };
+  try {
+    const json = JSON.parse(match[1].trim());
+    if (json.type === 'music_recommendation' && Array.isArray(json.tracks)) {
+      return { cleanText: text.replace(/```json\s*[\s\S]*?```/, '').trim(), tracks: json.tracks };
+    }
+  } catch { /* invalid JSON */ }
+  return { cleanText: text, tracks: [] };
+}
+
+type SpotifyState = 'idle' | 'loading' | 'loaded' | 'error';
+
+function TrackCard({ track, authToken }: { track: MusicTrack; authToken: string }) {
+  const [state, setState] = useState<SpotifyState>('idle');
+  const [spotifyId, setSpotifyId] = useState<string | null>(null);
+  const [spotifyUrl, setSpotifyUrl] = useState<string | null>(null);
+  const searchUrl = `https://open.spotify.com/search/${encodeURIComponent(`${track.artist} ${track.title}`)}`;
+
+  async function handlePlay() {
+    if (state === 'loaded') { setState('idle'); return; }
+    if (state === 'loading') return;
+    setState('loading');
+    try {
+      const res = await fetch(
+        `/api/spotify-search?artist=${encodeURIComponent(track.artist)}&title=${encodeURIComponent(track.title)}`,
+        { headers: { Authorization: `Bearer ${authToken}` } }
+      );
+      if (!res.ok) throw new Error();
+      const data = await res.json();
+      setSpotifyId(data.id);
+      setSpotifyUrl(data.spotifyUrl);
+      setState('loaded');
+    } catch {
+      setState('error');
+    }
+  }
+
+  return (
+    <div className={styles.trackCard}>
+      <div className={styles.trackMeta}>
+        <span className={styles.trackInfo}>🎵 <strong>{track.title}</strong> — {track.artist}</span>
+        <div className={styles.trackActions}>
+          <button
+            className={`${styles.trackBtn} ${state === 'error' ? styles.trackBtnError : ''}`}
+            onClick={handlePlay}
+            disabled={state === 'loading' || state === 'error'}
+          >
+            {state === 'loading' ? '…' : state === 'loaded' ? '✕ Fermer' : state === 'error' ? 'Introuvable' : '▶ Écouter'}
+          </button>
+          <a href={searchUrl} target="_blank" rel="noopener noreferrer" className={styles.trackBtnSearch}>
+            Spotify ↗
+          </a>
+        </div>
+      </div>
+      {state === 'loaded' && spotifyId && (
+        <div className={styles.trackFrameWrap}>
+          <iframe
+            className={styles.trackFrame}
+            src={`https://open.spotify.com/embed/track/${spotifyId}?utm_source=generator&theme=0`}
+            allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+            loading="lazy"
+          />
+        </div>
+      )}
+      {state === 'loaded' && spotifyUrl && (
+        <a href={spotifyUrl} target="_blank" rel="noopener noreferrer" className={styles.trackOpenSpotify}>
+          Ouvrir dans Spotify ↗
+        </a>
+      )}
+    </div>
+  );
+}
+
+function TrackList({ tracks, supabase }: { tracks: MusicTrack[]; supabase: ReturnType<typeof import('@/lib/supabase-browser').createBrowserClient> }) {
+  const [token, setToken] = useState<string | null>(null);
+  useEffect(() => {
+    supabase.auth.getSession().then((r: { data: { session: import('@supabase/supabase-js').Session | null } }) => setToken(r.data.session?.access_token ?? null));
+  }, [supabase]);
+  if (!token) return null;
+  return (
+    <div className={styles.trackList}>
+      {tracks.map((track, ti) => <TrackCard key={ti} track={track} authToken={token} />)}
+    </div>
+  );
+}
+
+function toAssistantMessage(expertId: string, text: string): Message {
+  if (expertId === 'musique') {
+    const { cleanText, tracks } = parseMusicBlock(text);
+    return { role: 'assistant', text: cleanText, tracks: tracks.length > 0 ? tracks : undefined };
+  }
+  return { role: 'assistant', text };
+}
 
 function ChatPageInner() {
   const searchParams = useSearchParams();
@@ -238,7 +344,10 @@ function ChatPageInner() {
       });
       const data = await res.json();
       if (data.messages?.length > 0) {
-        setMessages(prev => ({ ...prev, [expertId]: data.messages }));
+        const parsed = data.messages.map((m: Message) =>
+          m.role === 'assistant' ? toAssistantMessage(expertId, m.text) : m
+        );
+        setMessages(prev => ({ ...prev, [expertId]: parsed }));
       }
       setHasMoreHistory(prev => ({ ...prev, [expertId]: data.hasMore ?? false }));
       setHistoryStartIndex(prev => ({ ...prev, [expertId]: data.startIndex ?? 0 }));
@@ -262,7 +371,10 @@ function ChatPageInner() {
       });
       const data = await res.json();
       if (data.messages?.length > 0) {
-        setMessages(prev => ({ ...prev, [expertId]: [...data.messages, ...(prev[expertId] ?? [])] }));
+        const parsed = data.messages.map((m: Message) =>
+          m.role === 'assistant' ? toAssistantMessage(expertId, m.text) : m
+        );
+        setMessages(prev => ({ ...prev, [expertId]: [...parsed, ...(prev[expertId] ?? [])] }));
         setHistoryStartIndex(prev => ({ ...prev, [expertId]: data.startIndex ?? 0 }));
         setHasMoreHistory(prev => ({ ...prev, [expertId]: data.hasMore ?? false }));
         requestAnimationFrame(() => {
@@ -317,7 +429,7 @@ function ChatPageInner() {
       const data = await res.json();
       setMessages(prev => ({
         ...prev,
-        [selectedExpert]: [...(prev[selectedExpert] ?? []), { role: 'assistant', text: data.reply ?? data.error }],
+        [selectedExpert]: [...(prev[selectedExpert] ?? []), toAssistantMessage(selectedExpert, data.reply ?? data.error)],
       }));
     } catch {
       setMessages(prev => ({
@@ -405,7 +517,7 @@ function ChatPageInner() {
       const data = await res.json();
       setMessages(prev => ({
         ...prev,
-        [selectedExpert]: [...(prev[selectedExpert] ?? []), { role: 'assistant', text: data.reply ?? data.error }],
+        [selectedExpert]: [...(prev[selectedExpert] ?? []), toAssistantMessage(selectedExpert, data.reply ?? data.error)],
       }));
     } catch {
       setMessages(prev => ({
@@ -580,6 +692,9 @@ function ChatPageInner() {
                       : <div className={styles.bubbleText}>
                           <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.text}</ReactMarkdown>
                         </div>
+                  )}
+                  {msg.tracks && msg.tracks.length > 0 && (
+                    <TrackList tracks={msg.tracks} supabase={supabase} />
                   )}
                 </div>
               ))
