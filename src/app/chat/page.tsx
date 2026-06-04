@@ -19,25 +19,17 @@ const EXPERTS = [
     description: 'Briefing quotidien de l\'actualité marocaine et internationale — Bourse de Casablanca, MASI, économie, politique, tech.',
     available: true,
     welcomeMessage: "Bonjour ! Voici votre briefing Mgoun News 📰. Que souhaitez-vous approfondir ?",
-    quickReplies: ["Briefing du jour 📰", "Sport & Lions de l'Atlas ⚽", "Bourse & Économie 📈", "Divertissements & Culture 🎬"],
-  },
-  {
-    id: 'agri',
-    name: 'Mgoun AGRI',
-    icon: '🌾',
-    description: 'Expert en agriculture marocaine — traitements, engrais, irrigation, variétés locales, calendriers agricoles. Posez vos questions en Darija, français ou arabe.',
-    available: true,
-    welcomeMessage: "Salam ! Je suis Mgoun AGRI 🌾, votre expert en agriculture marocaine. Que puis-je faire pour vous aujourd'hui ?",
-    quickReplies: ["Traitement d'une maladie", "Calendrier d'irrigation", "Engrais recommandés", "Prix du marché"],
-  },
-  {
-    id: 'invest',
-    name: 'Mgoun Invest',
-    icon: '📈',
-    description: 'Mentor stratégique en investissement et entrepreneuriat au Maroc — success stories locales, feuilles de route concrètes, réalités du marché marocain.',
-    available: true,
-    welcomeMessage: "Bonjour. Quelle est votre priorité actuelle pour vos projets au Maroc ?",
-    quickReplies: ["Financement & Subventions", "Analyser un secteur", "Inspiration & Success Stories", "Lancer une startup"],
+    quickReplies: [
+      "Briefing du jour 📰",
+      "Politique & Société 🏛️",
+      "L'Essentiel International 🌐",
+      "Botola & Lions de l'Atlas ⚽",
+      "Planète Sport 🏟️",
+      "Divertissements & Culture 🎬",
+      "Marocains du Monde 🌍",
+      "Tech & Innovation 💡",
+      "Économie & Bourse 📈",
+    ],
   },
   {
     id: 'equilibre',
@@ -58,15 +50,6 @@ const EXPERTS = [
     quickReplies: ["Rééquilibrer mon alimentation", "Conseils pour le couscous du vendredi", "Manger sainement au restaurant", "Menu famille anti-gaspi"],
   },
   {
-    id: 'eveil',
-    name: 'Mgoun Éveil',
-    icon: '🌱',
-    description: 'Expert petite enfance 2-3 ans — activités Montessori avec objets du quotidien, parentalité bienveillante, alternatives aux écrans.',
-    available: true,
-    welcomeMessage: "Salut ! Prêt(e) pour occuper votre petit(e) ? Quel est votre niveau d'énergie aujourd'hui ?",
-    quickReplies: ["Je suis épuisé(e) 🛋️", "J'ai un peu de temps ⏱️", "On veut bouger ! 🏃", "Gérer une grosse colère"],
-  },
-  {
     id: 'evasion',
     name: 'Mgoun Évasion',
     icon: '🌍',
@@ -76,13 +59,31 @@ const EXPERTS = [
     quickReplies: ["Voyage famille au Maroc", "Europe sans visa", "Destination exotique", "Slow travel pas cher"],
   },
   {
-    id: 'hikaya',
-    name: 'Mgoun Hikaya',
-    icon: '🌙',
-    description: 'Conteur marocain pour enfants — histoires apaisantes pour le coucher, décors naturels du Maroc, animaux attachants.',
+    id: 'famille',
+    name: 'Mgoun Famille',
+    icon: '🏡',
+    description: 'Expert famille — activités Montessori pour enfants 2-3 ans, parentalité bienveillante, et histoires du soir apaisantes au décor marocain.',
     available: true,
-    welcomeMessage: "Bonsoir ! C'est l'heure de l'histoire ✨ Où se déroule notre aventure ce soir ?",
-    quickReplies: ["Dans le désert de Merzouga 🏜️", "Dans une forêt de cèdres 🌲", "Au bord de l'océan 🌊", "Dans une palmeraie du Sud 🌴"],
+    welcomeMessage: "Bonjour ! Je suis Mgoun Famille 🏡. Je peux vous aider avec des activités pour votre enfant ou lui raconter une belle histoire du soir. Par quoi commençons-nous ?",
+    quickReplies: ["Activité pour mon enfant 🌱", "Histoire du soir 🌙"],
+  },
+  {
+    id: 'agri',
+    name: 'Mgoun AGRI',
+    icon: '🌾',
+    description: 'Expert en agriculture marocaine — traitements, engrais, irrigation, variétés locales, calendriers agricoles. Posez vos questions en Darija, français ou arabe.',
+    available: true,
+    welcomeMessage: "Salam ! Je suis Mgoun AGRI 🌾, votre expert en agriculture marocaine. Que puis-je faire pour vous aujourd'hui ?",
+    quickReplies: ["Traitement d'une maladie", "Calendrier d'irrigation", "Engrais recommandés", "Prix du marché"],
+  },
+  {
+    id: 'invest',
+    name: 'Mgoun Invest',
+    icon: '📈',
+    description: 'Mentor stratégique en investissement et entrepreneuriat au Maroc — success stories locales, feuilles de route concrètes, réalités du marché marocain.',
+    available: true,
+    welcomeMessage: "Bonjour. Quelle est votre priorité actuelle pour vos projets au Maroc ?",
+    quickReplies: ["Financement & Subventions", "Analyser un secteur", "Inspiration & Success Stories", "Lancer une startup"],
   },
 ];
 
@@ -122,6 +123,13 @@ function ChatPageInner() {
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const messagesRef = useRef<HTMLDivElement>(null);
+
+  // Only auto-focus the input on non-touch devices — on mobile it would open the keyboard unexpectedly
+  function focusInput(delay = 50) {
+    if (typeof window !== 'undefined' && !('ontouchstart' in window) && navigator.maxTouchPoints === 0) {
+      setTimeout(() => inputRef.current?.focus(), delay);
+    }
+  }
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const singleLineHeightRef = useRef<number>(0);
@@ -319,7 +327,7 @@ function ChatPageInner() {
     } finally {
       setLoading(false);
       if (inputRef.current) inputRef.current.style.height = singleLineHeightRef.current ? singleLineHeightRef.current + 'px' : 'auto';
-      setTimeout(() => inputRef.current?.focus(), 50);
+      focusInput();
     }
   }
 
@@ -368,7 +376,7 @@ function ChatPageInner() {
           if (data.text) setInput(prev => (prev ? prev + ' ' + data.text : data.text));
         } finally {
           setIsTranscribing(false);
-          setTimeout(() => inputRef.current?.focus(), 50);
+          focusInput();
         }
       };
       mediaRecorderRef.current = recorder;
@@ -406,7 +414,7 @@ function ChatPageInner() {
       }));
     } finally {
       setLoading(false);
-      setTimeout(() => inputRef.current?.focus(), 50);
+      focusInput();
     }
   }
 
@@ -425,7 +433,7 @@ function ChatPageInner() {
     }
     if (inputRef.current) inputRef.current.style.height = singleLineHeightRef.current ? singleLineHeightRef.current + 'px' : 'auto';
     loadHistory(id);
-    setTimeout(() => inputRef.current?.focus(), 100);
+    focusInput(100);
   }
 
   // ── Dérivés ──────────────────────────────────────────────────────────────
