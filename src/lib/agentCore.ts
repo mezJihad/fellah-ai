@@ -287,9 +287,11 @@ export async function runAgent(
   console.log(`🧠 [${expert.id}] Requête : "${userText.slice(0, 80)}"`);
 
   const accountId = options?.accountId;
-  let history = accountId
+  const history = accountId
     ? await getHistoryByAccountId(accountId, expert.id)
     : await getHistory(sessionId, expert.id);
+  // Only the last 10 messages are sent to the LLM (cost control)
+  const llmHistory = history.slice(-10);
 
   const ragContext = await retrieveContext(userText);
   if (ragContext) console.log('📖 Contexte RAG injecté.');
@@ -317,7 +319,7 @@ export async function runAgent(
     }
     const model = genAI.getGenerativeModel(modelConfig);
     const result = await model.generateContent({
-      contents: [...history, { role: 'user' as const, parts: currentParts }],
+      contents: [...llmHistory, { role: 'user' as const, parts: currentParts }],
       generationConfig: {
         maxOutputTokens: 2000,
         // @ts-ignore — thinkingConfig supported by gemini-2.5-flash, not yet in SDK types
@@ -330,7 +332,7 @@ export async function runAgent(
     console.error(`❌ [${expert.id}] Erreur Gemini (fallback OpenAI):`, error);
     try {
       llmResponseText = await fallbackToOpenAI(expert.systemInstruction, [
-        ...history,
+        ...llmHistory,
         { role: 'user', parts: [{ text: userText || '[Image envoyée]' }] },
       ]);
       console.log(`✅ [${expert.id}] Réponse OpenAI fallback générée.`);
@@ -343,7 +345,7 @@ export async function runAgent(
   const savedUserText = imageData ? `[Photo envoyée] ${userText || ''}`.trim() : userText;
   history.push({ role: 'user', parts: [{ text: savedUserText }] });
   history.push({ role: 'model', parts: [{ text: llmResponseText }] });
-  if (history.length > 10) history = history.slice(history.length - 10);
+  // Full history stored — no truncation (LLM context window handled separately via llmHistory)
   if (accountId) {
     await saveHistoryByAccountId(accountId, expert.id, history);
   } else {

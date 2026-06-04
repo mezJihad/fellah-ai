@@ -1,7 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { createBrowserClient } from '@/lib/supabase-browser';
 
@@ -57,14 +56,14 @@ const EXPERTS = [
 ];
 
 export default function LandingPage() {
-  const router = useRouter();
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
     const supabase = createBrowserClient();
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) router.replace('/chat');
+      setIsLoggedIn(!!session);
     });
-  }, [router]);
+  }, []);
 
   return (
     <main>
@@ -77,7 +76,7 @@ export default function LandingPage() {
             Mgoun <span>AI</span>
           </span>
           <Link href="/chat" className="btn-chat-nav">
-            Commencer →
+            {isLoggedIn ? 'Retour au chat →' : 'Commencer →'}
           </Link>
         </div>
       </nav>
@@ -94,7 +93,7 @@ export default function LandingPage() {
             Mgoun AI regroupe 8 assistants intelligents spécialisés, accessibles directement via WhatsApp ou sur le web — en Darija, français ou arabe.
           </p>
           <Link href="/chat" className="btn-start">
-            Discuter avec un expert →
+            {isLoggedIn ? 'Retour au chat →' : 'Discuter avec un expert →'}
           </Link>
         </div>
       </section>

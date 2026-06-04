@@ -5,6 +5,8 @@ export const dynamic = 'force-dynamic';
 import { useEffect, useRef, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { createBrowserClient } from '@/lib/supabase-browser';
 import type { User } from '@supabase/supabase-js';
 import styles from '../page.module.css';
@@ -114,12 +116,21 @@ function ChatPageInner() {
   const [isRecording, setIsRecording] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [loadedExperts, setLoadedExperts] = useState<Set<string>>(new Set());
+  const [hasMoreHistory, setHasMoreHistory] = useState<Record<string, boolean>>({});
+  const [historyStartIndex, setHistoryStartIndex] = useState<Record<string, number>>({});
+  const [loadingOlder, setLoadingOlder] = useState(false);
 
   const bottomRef = useRef<HTMLDivElement>(null);
+  const messagesRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const singleLineHeightRef = useRef<number>(0);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  // Refs for scroll handler (avoids stale closures)
+  const hasMoreHistoryRef = useRef<Record<string, boolean>>({});
+  const historyStartIndexRef = useRef<Record<string, number>>({});
+  const loadingOlderRef = useRef(false);
+  const selectedExpertRef = useRef(initialExpert);
 
   // ── Auth listeners ────────────────────────────────────────────────────────
   useEffect(() => {
@@ -133,6 +144,10 @@ function ChatPageInner() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [supabase]);
 
+  useEffect(() => { hasMoreHistoryRef.current = hasMoreHistory; }, [hasMoreHistory]);
+  useEffect(() => { historyStartIndexRef.current = historyStartIndex; }, [historyStartIndex]);
+  useEffect(() => { selectedExpertRef.current = selectedExpert; }, [selectedExpert]);
+
   useEffect(() => {
     if (user) loadHistory(selectedExpert);
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -142,6 +157,21 @@ function ChatPageInner() {
     if (inputRef.current && singleLineHeightRef.current === 0) {
       singleLineHeightRef.current = inputRef.current.scrollHeight;
     }
+  }, []);
+
+  // Infinite scroll — load older messages when scrolling to top
+  useEffect(() => {
+    const container = messagesRef.current;
+    if (!container) return;
+    const onScroll = () => {
+      const expert = selectedExpertRef.current;
+      if (container.scrollTop < 80 && hasMoreHistoryRef.current[expert] && !loadingOlderRef.current) {
+        loadOlderMessages(expert);
+      }
+    };
+    container.addEventListener('scroll', onScroll, { passive: true });
+    return () => container.removeEventListener('scroll', onScroll);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -181,20 +211,57 @@ function ChatPageInner() {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
     try {
-      const res = await fetch(`/api/history?expertId=${expertId}`, {
+      const res = await fetch(`/api/history?expertId=${expertId}&limit=30`, {
         headers: { Authorization: `Bearer ${session.access_token}` },
       });
       const data = await res.json();
       if (data.messages?.length > 0) {
         setMessages(prev => ({ ...prev, [expertId]: data.messages }));
       }
+      setHasMoreHistory(prev => ({ ...prev, [expertId]: data.hasMore ?? false }));
+      setHistoryStartIndex(prev => ({ ...prev, [expertId]: data.startIndex ?? 0 }));
     } catch { /* non-blocking */ }
+  }
+
+  async function loadOlderMessages(expertId: string) {
+    if (loadingOlderRef.current) return;
+    const startIndex = historyStartIndexRef.current[expertId] ?? 0;
+    if (startIndex === 0) return;
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+
+    loadingOlderRef.current = true;
+    setLoadingOlder(true);
+    const scrollHeightBefore = messagesRef.current?.scrollHeight ?? 0;
+
+    try {
+      const res = await fetch(`/api/history?expertId=${expertId}&limit=30&beforeIndex=${startIndex}`, {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      const data = await res.json();
+      if (data.messages?.length > 0) {
+        setMessages(prev => ({ ...prev, [expertId]: [...data.messages, ...(prev[expertId] ?? [])] }));
+        setHistoryStartIndex(prev => ({ ...prev, [expertId]: data.startIndex ?? 0 }));
+        setHasMoreHistory(prev => ({ ...prev, [expertId]: data.hasMore ?? false }));
+        requestAnimationFrame(() => {
+          if (messagesRef.current) {
+            messagesRef.current.scrollTop = messagesRef.current.scrollHeight - scrollHeightBefore;
+          }
+        });
+      }
+    } catch { /* non-blocking */ }
+    finally {
+      loadingOlderRef.current = false;
+      setLoadingOlder(false);
+    }
   }
 
   async function logout() {
     await supabase.auth.signOut();
     setMessages({});
     setLoadedExperts(new Set());
+    setHasMoreHistory({});
+    setHistoryStartIndex({});
   }
 
   // ── Chat helpers ──────────────────────────────────────────────────────────
@@ -410,17 +477,19 @@ function ChatPageInner() {
               ←
             </button>
           )}
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/favicon.svg" alt="Mgoun AI" width={26} height={26} className={styles.logoIcon} />
-          <span className={`${styles.logo} ${mobileView === 'chat' ? styles.logoHiddenMobile : ''}`}>Mgoun AI</span>
+          <Link href="/" className={styles.logoLink}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/favicon.svg" alt="Mgoun AI" width={26} height={26} className={styles.logoIcon} />
+            <span className={`${styles.logo} ${mobileView === 'chat' ? styles.logoHiddenMobile : ''}`}>Mgoun AI</span>
+          </Link>
           {mobileView === 'chat' && (
             <span className={styles.expertNameMobile}>{expert.icon} {expert.name}</span>
           )}
         </div>
         <div className={styles.headerRight}>
           <span className={styles.userEmail}>{user.email}</span>
+          <Link href="/" className={styles.homeBtn}>Accueil</Link>
           <button className={styles.logoutBtn} onClick={logout}>Déconnexion</button>
-          <Link href="/" className={styles.homeBtn}>À propos</Link>
         </div>
       </header>
 
@@ -456,28 +525,19 @@ function ChatPageInner() {
         <main className={`${styles.main} ${mobileView === 'chat' ? styles.mainVisible : ''}`}>
 
           {/* Messages */}
-          <div className={styles.messages}>
+          <div className={styles.messages} ref={messagesRef}>
+            {loadingOlder && (
+              <div className={styles.loadingOlderIndicator}>···</div>
+            )}
             {currentMessages.length === 0 ? (
               <div className={styles.welcome}>
                 <div className={styles.welcomeIcon}>{expert.icon}</div>
                 <h2 className={styles.welcomeName}>{expert.name}</h2>
                 {expert.welcomeMessage && (
                   <div className={`${styles.bubble} ${styles.bubbleAssistant} ${styles.welcomeBubble}`}>
-                    <pre className={styles.bubbleText}>{expert.welcomeMessage}</pre>
-                  </div>
-                )}
-                {expert.quickReplies && expert.quickReplies.length > 0 && (
-                  <div className={styles.quickReplies}>
-                    {expert.quickReplies.map(reply => (
-                      <button
-                        key={reply}
-                        className={styles.quickReplyBtn}
-                        onClick={() => handleQuickReply(reply)}
-                        disabled={loading}
-                      >
-                        {reply}
-                      </button>
-                    ))}
+                    <div className={styles.bubbleText}>
+                      <ReactMarkdown remarkPlugins={[remarkGfm]}>{expert.welcomeMessage}</ReactMarkdown>
+                    </div>
                   </div>
                 )}
               </div>
@@ -488,9 +548,30 @@ function ChatPageInner() {
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={msg.imageUrl} alt="Image envoyée" className={styles.bubbleImage} />
                   )}
-                  {msg.text && <pre className={styles.bubbleText}>{msg.text}</pre>}
+                  {msg.text && (
+                    msg.role === 'user'
+                      ? <p className={styles.bubbleText}>{msg.text}</p>
+                      : <div className={styles.bubbleText}>
+                          <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.text}</ReactMarkdown>
+                        </div>
+                  )}
                 </div>
               ))
+            )}
+            {/* Quick replies — toujours visibles comme menu de raccourcis */}
+            {!loading && expert.quickReplies && expert.quickReplies.length > 0 && (
+              <div className={styles.quickReplies}>
+                {expert.quickReplies.map(reply => (
+                  <button
+                    key={reply}
+                    className={styles.quickReplyBtn}
+                    onClick={() => handleQuickReply(reply)}
+                    disabled={loading}
+                  >
+                    {reply}
+                  </button>
+                ))}
+              </div>
             )}
             {loading && (
               <div className={`${styles.bubble} ${styles.bubbleAssistant}`}>

@@ -203,6 +203,14 @@
   flex-shrink: 0;
 }
 
+.logoLink {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+  color: inherit;
+}
+
 .logo {
   font-weight: 800;
   font-size: 1.05rem;
@@ -451,9 +459,8 @@
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  justify-content: center;
-  max-width: 440px;
-  margin: 0 auto;
+  justify-content: flex-start;
+  padding: 4px 0 8px;
 }
 
 .quickReplyBtn {
@@ -507,12 +514,59 @@
   margin: 0;
   font-family: inherit;
   font-size: 0.93rem;
-  white-space: pre-wrap;
   word-break: break-word;
+  line-height: 1.6;
 }
 
-.bubbleUser .bubbleText { color: #ffffff; }
+/* Messages utilisateur : texte brut, pas de margin */
+.bubbleUser .bubbleText { color: #ffffff; white-space: pre-wrap; }
 .bubbleAssistant .bubbleText { color: var(--text); }
+
+/* Markdown dans les bulles assistant */
+.bubbleText p { margin: 0 0 0.5em; }
+.bubbleText p:last-child { margin-bottom: 0; }
+.bubbleText strong { font-weight: 700; }
+.bubbleText em { font-style: italic; }
+.bubbleText ul, .bubbleText ol {
+  margin: 0.4em 0 0.6em 1.2em;
+  padding: 0;
+}
+.bubbleText li { margin-bottom: 0.2em; }
+.bubbleText h1, .bubbleText h2, .bubbleText h3 {
+  font-size: 1em;
+  font-weight: 700;
+  margin: 0.6em 0 0.3em;
+}
+.bubbleText code {
+  background: rgba(0,0,0,0.08);
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-family: monospace;
+  font-size: 0.88em;
+}
+.bubbleUser .bubbleText code { background: rgba(255,255,255,0.2); }
+.bubbleText pre {
+  background: rgba(0,0,0,0.08);
+  border-radius: 6px;
+  padding: 10px 12px;
+  overflow-x: auto;
+  margin: 0.5em 0;
+}
+.bubbleText pre code { background: transparent; padding: 0; }
+.bubbleText blockquote {
+  border-left: 3px solid var(--green);
+  margin: 0.4em 0;
+  padding-left: 10px;
+  color: var(--text-muted);
+}
+
+.loadingOlderIndicator {
+  text-align: center;
+  padding: 8px 0 4px;
+  color: var(--text-muted);
+  font-size: 1.2rem;
+  letter-spacing: 4px;
+}
 
 .typing {
   font-size: 1.2rem;

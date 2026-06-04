@@ -17,24 +17,36 @@ async function getOrCreateAccount(phone: string): Promise<string> {
 
 export async function getHistory(phone: string, expertId: string): Promise<ChatMessage[]> {
   const accountId = await getOrCreateAccount(phone);
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('conversations')
     .select('messages')
     .eq('account_id', accountId)
     .eq('channel', 'whatsapp')
     .eq('expert_id', expertId)
-    .single();
+    .order('updated_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) console.error('getHistory error:', error);
   return (data?.messages as ChatMessage[]) ?? [];
 }
 
 export async function saveHistory(phone: string, expertId: string, messages: ChatMessage[]): Promise<void> {
   const accountId = await getOrCreateAccount(phone);
-  await supabase
+  const { data: existing } = await supabase
     .from('conversations')
-    .upsert(
-      { account_id: accountId, channel: 'whatsapp', expert_id: expertId, messages, updated_at: new Date().toISOString() },
-      { onConflict: 'account_id, channel, expert_id' }
-    );
+    .select('id')
+    .eq('account_id', accountId)
+    .eq('channel', 'whatsapp')
+    .eq('expert_id', expertId)
+    .limit(1)
+    .maybeSingle();
+
+  const payload = { messages, updated_at: new Date().toISOString() };
+  const { error } = existing?.id
+    ? await supabase.from('conversations').update(payload).eq('id', existing.id)
+    : await supabase.from('conversations').insert({ account_id: accountId, channel: 'whatsapp', expert_id: expertId, ...payload });
+
+  if (error) console.error('saveHistory error:', error);
 }
 
 // ── Expert actif sur WhatsApp (par téléphone) ───────────────────────────────
@@ -71,21 +83,33 @@ export async function getOrCreateAccountByUserId(userId: string): Promise<string
 }
 
 export async function getHistoryByAccountId(accountId: string, expertId: string): Promise<ChatMessage[]> {
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('conversations')
     .select('messages')
     .eq('account_id', accountId)
     .eq('channel', 'web')
     .eq('expert_id', expertId)
-    .single();
+    .order('updated_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) console.error('getHistoryByAccountId error:', error);
   return (data?.messages as ChatMessage[]) ?? [];
 }
 
 export async function saveHistoryByAccountId(accountId: string, expertId: string, messages: ChatMessage[]): Promise<void> {
-  await supabase
+  const { data: existing } = await supabase
     .from('conversations')
-    .upsert(
-      { account_id: accountId, channel: 'web', expert_id: expertId, messages, updated_at: new Date().toISOString() },
-      { onConflict: 'account_id, channel, expert_id' }
-    );
+    .select('id')
+    .eq('account_id', accountId)
+    .eq('channel', 'web')
+    .eq('expert_id', expertId)
+    .limit(1)
+    .maybeSingle();
+
+  const payload = { messages, updated_at: new Date().toISOString() };
+  const { error } = existing?.id
+    ? await supabase.from('conversations').update(payload).eq('id', existing.id)
+    : await supabase.from('conversations').insert({ account_id: accountId, channel: 'web', expert_id: expertId, ...payload });
+
+  if (error) console.error('saveHistoryByAccountId error:', error);
 }
