@@ -249,7 +249,7 @@ async function processMessageInBackground(
   }
 
   let imageData: { mimeType: string; base64: string } | undefined;
-  if (isImage && mediaUrl && mediaContentType) {
+  if (isImage && mediaUrl && mediaContentType && expertId === 'agri') {
     const imageBuffer = await downloadTwilioMedia(mediaUrl);
     imageData = { mimeType: mediaContentType, base64: imageBuffer.toString('base64') };
   }
@@ -275,7 +275,7 @@ async function processMessageInBackground(
   await incrementMessageCount(sender);
 
   let generatedAudioUrl: string | null = null;
-  if (isAudio) {
+  if (isAudio && expertId === 'agri') {
     console.log('🔊 Génération TTS...');
     try {
       generatedAudioUrl = await generateSpeech(llmResponseText, baseUrl);

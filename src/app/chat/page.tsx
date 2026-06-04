@@ -2,7 +2,8 @@
 
 export const dynamic = 'force-dynamic';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { createBrowserClient } from '@/lib/supabase-browser';
 import type { User } from '@supabase/supabase-js';
@@ -84,9 +85,13 @@ const EXPERTS = [
 ];
 
 type Message = { role: 'user' | 'assistant'; text: string; imageUrl?: string };
-type AuthMode = 'login' | 'signup' | 'confirm' | 'confirm-phone-change';
+type AuthMode = 'login' | 'signup' | 'confirm';
 
-export default function ChatPage() {
+function ChatPageInner() {
+  const searchParams = useSearchParams();
+  const expertParam = searchParams.get('expert');
+  const initialExpert = EXPERTS.find(e => e.id === expertParam) ? expertParam! : 'news';
+
   const [supabase] = useState(() => createBrowserClient());
 
   // ── Auth ──────────────────────────────────────────────────────────────────
@@ -95,15 +100,11 @@ export default function ChatPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [phone, setPhone] = useState('');
   const [authError, setAuthError] = useState('');
   const [authLoading, setAuthLoading] = useState(false);
-  const [pendingPhone, setPendingPhone] = useState('');
-  const [currentPhone, setCurrentPhone] = useState('');
-  const pendingPhoneRef = useRef('');
 
   // ── Chat ──────────────────────────────────────────────────────────────────
-  const [selectedExpert, setSelectedExpert] = useState('news');
+  const [selectedExpert, setSelectedExpert] = useState(initialExpert);
   const [mobileView, setMobileView] = useState<'list' | 'chat'>('list');
   const [messages, setMessages] = useState<Record<string, Message[]>>({});
   const [input, setInput] = useState('');
@@ -117,6 +118,7 @@ export default function ChatPage() {
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const singleLineHeightRef = useRef<number>(0);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
 
   // ── Auth listeners ────────────────────────────────────────────────────────
@@ -126,11 +128,6 @@ export default function ChatPage() {
     });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
       setUser(session?.user ?? null);
-      if (session?.user && pendingPhoneRef.current) {
-        const p = pendingPhoneRef.current;
-        pendingPhoneRef.current = '';
-        linkPhone(session.access_token, p);
-      }
     });
     return () => subscription.unsubscribe();
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -142,6 +139,12 @@ export default function ChatPage() {
   }, [user]);
 
   useEffect(() => {
+    if (inputRef.current && singleLineHeightRef.current === 0) {
+      singleLineHeightRef.current = inputRef.current.scrollHeight;
+    }
+  }, []);
+
+  useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, loading, selectedExpert]);
 
@@ -151,24 +154,6 @@ export default function ChatPage() {
     setAuthError('');
     setPassword('');
     setConfirmPassword('');
-  }
-
-  async function linkPhone(accessToken: string, phoneToLink: string, confirmChange = false) {
-    try {
-      const res = await fetch('/api/auth/link', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
-        body: JSON.stringify({ phone: phoneToLink, confirmChange }),
-      });
-      const data = await res.json();
-      if (data.needsConfirmation) {
-        setCurrentPhone(data.currentPhone);
-        setPendingPhone(phoneToLink);
-        setAuthMode('confirm-phone-change');
-      } else if (data.error === 'number_taken') {
-        setAuthError('Ce numéro est déjà utilisé par un autre compte.');
-      }
-    } catch { /* non-blocking */ }
   }
 
   async function login() {
@@ -186,21 +171,8 @@ export default function ChatPage() {
     setAuthLoading(true);
     const { data, error } = await supabase.auth.signUp({ email, password });
     if (error) { setAuthError(error.message); setAuthLoading(false); return; }
-    const trimmedPhone = phone.trim();
-    if (data.session) {
-      if (trimmedPhone) await linkPhone(data.session.access_token, trimmedPhone);
-    } else {
-      if (trimmedPhone) pendingPhoneRef.current = trimmedPhone;
-      setAuthMode('confirm');
-    }
+    if (!data.session) setAuthMode('confirm');
     setAuthLoading(false);
-  }
-
-  async function confirmPhoneChange() {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return;
-    await linkPhone(session.access_token, pendingPhone, true);
-    setPendingPhone(''); setCurrentPhone(''); setAuthMode('login');
   }
 
   async function loadHistory(expertId: string) {
@@ -261,6 +233,7 @@ export default function ChatPage() {
       }));
     } finally {
       setLoading(false);
+      if (inputRef.current) inputRef.current.style.height = singleLineHeightRef.current ? singleLineHeightRef.current + 'px' : 'auto';
       setTimeout(() => inputRef.current?.focus(), 50);
     }
   }
@@ -359,11 +332,18 @@ export default function ChatPage() {
   function selectExpert(id: string) {
     setSelectedExpert(id);
     setMobileView('chat');
+    setInput('');
+    if (id !== 'agri') {
+      setImageData(null);
+      setImagePreview(null);
+      if (isRecording) mediaRecorderRef.current?.stop();
+    }
+    if (inputRef.current) inputRef.current.style.height = singleLineHeightRef.current ? singleLineHeightRef.current + 'px' : 'auto';
     loadHistory(id);
     setTimeout(() => inputRef.current?.focus(), 100);
   }
 
-  // ── Dérivés ───────────────────────────────────────────────────────────────
+  // ── Dérivés ──────────────────────────────────────────────────────────────
   const currentMessages = messages[selectedExpert] ?? [];
   const expert = EXPERTS.find(e => e.id === selectedExpert)!;
 
@@ -387,16 +367,6 @@ export default function ChatPage() {
                 Retour à la connexion
               </button>
             </>
-          ) : authMode === 'confirm-phone-change' ? (
-            <>
-              <p className={styles.authDesc}>
-                Ce compte est déjà lié au <strong>{currentPhone}</strong>.<br />
-                Remplacer par <strong>{pendingPhone}</strong> ?
-              </p>
-              {authError && <p className={styles.authError}>{authError}</p>}
-              <button className={styles.submitBtn} onClick={confirmPhoneChange}>Confirmer</button>
-              <button className={styles.switchBtn} onClick={() => { setPendingPhone(''); setCurrentPhone(''); switchMode('login'); }}>Annuler</button>
-            </>
           ) : (
             <>
               <p className={styles.authDesc}>
@@ -405,10 +375,7 @@ export default function ChatPage() {
               <input className={styles.authInput} type="email" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} autoComplete="email" />
               <input className={styles.authInput} type="password" placeholder="Mot de passe" value={password} onChange={e => setPassword(e.target.value)} autoComplete={authMode === 'login' ? 'current-password' : 'new-password'} onKeyDown={e => authMode === 'login' && e.key === 'Enter' && login()} />
               {authMode === 'signup' && (
-                <>
-                  <input className={styles.authInput} type="password" placeholder="Confirmer le mot de passe" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} autoComplete="new-password" />
-                  <input className={styles.authInput} type="tel" placeholder="Numéro WhatsApp (facultatif) ex: +212612345678" value={phone} onChange={e => setPhone(e.target.value)} autoComplete="tel" onKeyDown={e => e.key === 'Enter' && signup()} />
-                </>
+                <input className={styles.authInput} type="password" placeholder="Confirmer le mot de passe" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} autoComplete="new-password" />
               )}
               {authError && <p className={styles.authError}>{authError}</p>}
               <button className={styles.submitBtn} onClick={authMode === 'login' ? login : signup} disabled={authLoading || !email || !password}>
@@ -550,36 +517,47 @@ export default function ChatPage() {
                 style={{ display: 'none' }}
                 onChange={handleFileChange}
               />
-              <button
-                className={styles.attachBtn}
-                onClick={() => fileInputRef.current?.click()}
-                disabled={loading}
-                aria-label="Joindre une image"
-                title="Joindre une image"
-              >
-                📎
-              </button>
+              <div className={styles.inputPill}>
+                {selectedExpert === 'agri' && (
+                  <button
+                    className={styles.attachBtn}
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={loading}
+                    aria-label="Joindre une image"
+                    title="Joindre une image"
+                  >
+                    📎
+                  </button>
+                )}
 
-              <textarea
-                ref={inputRef}
-                className={styles.input}
-                value={input}
-                onChange={e => setInput(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder={`Message à ${expert.name}… (Entrée pour envoyer)`}
-                rows={1}
-                disabled={loading}
-              />
+                <textarea
+                  ref={inputRef}
+                  className={styles.input}
+                  value={input}
+                  onChange={e => {
+                    setInput(e.target.value);
+                    const el = e.target;
+                    el.style.height = 'auto';
+                    el.style.height = Math.max(singleLineHeightRef.current, el.scrollHeight) + 'px';
+                  }}
+                  onKeyDown={handleKeyDown}
+                  placeholder={`Message à ${expert.name}…`}
+                  rows={1}
+                  disabled={loading}
+                />
 
-              <button
-                className={`${styles.micBtn} ${isRecording ? styles.micBtnRecording : ''}`}
-                onClick={toggleRecording}
-                disabled={loading || isTranscribing}
-                aria-label={isRecording ? 'Arrêter l\'enregistrement' : 'Enregistrer un audio'}
-                title={isRecording ? 'Arrêter' : 'Enregistrer'}
-              >
-                {isTranscribing ? '…' : isRecording ? '⏹' : '🎤'}
-              </button>
+                {selectedExpert === 'agri' && (
+                  <button
+                    className={`${styles.micBtn} ${isRecording ? styles.micBtnRecording : ''}`}
+                    onClick={toggleRecording}
+                    disabled={loading || isTranscribing}
+                    aria-label={isRecording ? 'Arrêter l\'enregistrement' : 'Enregistrer un audio'}
+                    title={isRecording ? 'Arrêter' : 'Enregistrer'}
+                  >
+                    {isTranscribing ? '…' : isRecording ? '⏹' : '🎤'}
+                  </button>
+                )}
+              </div>
 
               <button className={styles.sendBtn} onClick={sendMessage} disabled={loading || (!input.trim() && !imageData)}>
                 ↑
@@ -589,5 +567,13 @@ export default function ChatPage() {
         </main>
       </div>
     </div>
+  );
+}
+
+export default function ChatPage() {
+  return (
+    <Suspense>
+      <ChatPageInner />
+    </Suspense>
   );
 }

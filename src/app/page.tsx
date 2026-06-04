@@ -115,7 +115,7 @@ export default function LandingPage() {
                 </div>
                 <h3 className="expert-name">{expert.name}</h3>
                 <p className="expert-description">{expert.description}</p>
-                <Link href="/chat" className="btn-whatsapp" style={{ textDecoration: 'none', justifyContent: 'center' }}>
+                <Link href={`/chat?expert=${expert.id}`} className="btn-whatsapp" style={{ textDecoration: 'none', justifyContent: 'center' }}>
                   Discuter →
                 </Link>
               </div>
