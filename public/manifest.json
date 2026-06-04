@@ -1,0 +1,41 @@
+{
+  "name": "Mgoun AI — Vos experts IA",
+  "short_name": "Mgoun AI",
+  "description": "Discutez avec vos experts IA marocains en Darija, français ou arabe — agriculture, actualités, nutrition, voyage et plus.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f8fafc",
+  "theme_color": "#16a34a",
+  "orientation": "portrait-primary",
+  "lang": "fr",
+  "categories": ["productivity", "lifestyle"],
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Mgoun News",
+      "short_name": "News",
+      "url": "/chat?expert=news",
+      "icons": [{ "src": "/favicon.svg", "sizes": "any" }]
+    },
+    {
+      "name": "Mgoun AGRI",
+      "short_name": "AGRI",
+      "url": "/chat?expert=agri",
+      "icons": [{ "src": "/favicon.svg", "sizes": "any" }]
+    }
+  ]
+}

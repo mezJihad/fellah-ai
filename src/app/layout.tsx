@@ -1,6 +1,7 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter, Outfit } from "next/font/google";
 import "./globals.css";
+import PwaRegister from "@/components/PwaRegister";
 
 const outfit = Outfit({
   variable: "--font-outfit",
@@ -12,13 +13,27 @@ const inter = Inter({
   subsets: ["latin"],
 });
 
+export const viewport: Viewport = {
+  themeColor: "#16a34a",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+};
+
 export const metadata: Metadata = {
   title: "Mgoun AI — Vos experts IA",
-  description: "Discutez avec vos experts IA marocains en Darija, français ou arabe — agriculture, santé et bien plus.",
+  description: "Discutez avec vos experts IA marocains en Darija, français ou arabe — agriculture, actualités, nutrition, voyage et plus.",
+  manifest: "/manifest.json",
   icons: {
-    icon: '/favicon.svg',
-    shortcut: '/favicon.svg',
-    apple: '/favicon.svg',
+    icon: "/favicon.svg",
+    shortcut: "/favicon.svg",
+    apple: "/favicon.svg",
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Mgoun AI",
   },
 };
 
@@ -29,7 +44,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="fr" className={`${outfit.variable} ${inter.variable}`}>
-      <body>{children}</body>
+      <body>
+        {children}
+        <PwaRegister />
+      </body>
     </html>
   );
 }

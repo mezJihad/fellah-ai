@@ -8,7 +8,7 @@ import Link from 'next/link';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { createBrowserClient } from '@/lib/supabase-browser';
-import type { User } from '@supabase/supabase-js';
+import type { User, Session, AuthChangeEvent } from '@supabase/supabase-js';
 import styles from '../page.module.css';
 
 const EXPERTS = [
@@ -132,12 +132,21 @@ function ChatPageInner() {
   const loadingOlderRef = useRef(false);
   const selectedExpertRef = useRef(initialExpert);
 
+  // ── Pré-remplir email si l'utilisateur a déjà eu un compte ──────────────
+  useEffect(() => {
+    const lastEmail = localStorage.getItem('mgoun_last_email');
+    if (lastEmail) {
+      setEmail(lastEmail);
+      setAuthMode('login');
+    }
+  }, []);
+
   // ── Auth listeners ────────────────────────────────────────────────────────
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
+    supabase.auth.getSession().then((result: { data: { session: Session | null } }) => {
+      setUser(result.data.session?.user ?? null);
     });
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event: AuthChangeEvent, session: Session | null) => {
       setUser(session?.user ?? null);
     });
     return () => subscription.unsubscribe();
@@ -190,7 +199,11 @@ function ChatPageInner() {
     setAuthError('');
     setAuthLoading(true);
     const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) setAuthError('Email ou mot de passe incorrect.');
+    if (error) {
+      setAuthError('Email ou mot de passe incorrect.');
+    } else {
+      localStorage.setItem('mgoun_last_email', email);
+    }
     setAuthLoading(false);
   }
 
@@ -201,6 +214,7 @@ function ChatPageInner() {
     setAuthLoading(true);
     const { data, error } = await supabase.auth.signUp({ email, password });
     if (error) { setAuthError(error.message); setAuthLoading(false); return; }
+    localStorage.setItem('mgoun_last_email', email);
     if (!data.session) setAuthMode('confirm');
     setAuthLoading(false);
   }
@@ -262,6 +276,10 @@ function ChatPageInner() {
     setLoadedExperts(new Set());
     setHasMoreHistory({});
     setHistoryStartIndex({});
+    setAuthMode('login');
+    setPassword('');
+    setConfirmPassword('');
+    setAuthError('');
   }
 
   // ── Chat helpers ──────────────────────────────────────────────────────────
@@ -477,7 +495,7 @@ function ChatPageInner() {
               ←
             </button>
           )}
-          <Link href="/" className={styles.logoLink}>
+          <Link href="/?home=1" className={styles.logoLink}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/favicon.svg" alt="Mgoun AI" width={26} height={26} className={styles.logoIcon} />
             <span className={`${styles.logo} ${mobileView === 'chat' ? styles.logoHiddenMobile : ''}`}>Mgoun AI</span>
@@ -488,7 +506,7 @@ function ChatPageInner() {
         </div>
         <div className={styles.headerRight}>
           <span className={styles.userEmail}>{user.email}</span>
-          <Link href="/" className={styles.homeBtn}>Accueil</Link>
+          <Link href="/?home=1" className={styles.homeBtn}>Accueil</Link>
           <button className={styles.logoutBtn} onClick={logout}>Déconnexion</button>
         </div>
       </header>

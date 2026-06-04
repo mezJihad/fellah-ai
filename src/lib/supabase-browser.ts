@@ -1,10 +1,10 @@
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { createBrowserClient as _createBrowserClient } from '@supabase/ssr';
 
-let instance: SupabaseClient | null = null;
+let instance: ReturnType<typeof _createBrowserClient> | null = null;
 
-export function createBrowserClient(): SupabaseClient {
+export function createBrowserClient() {
   if (!instance) {
-    instance = createClient(
+    instance = _createBrowserClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     );

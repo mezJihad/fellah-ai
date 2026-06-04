@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { createBrowserClient } from '@/lib/supabase-browser';
 
@@ -55,13 +56,16 @@ const EXPERTS = [
   },
 ];
 
-export default function LandingPage() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+function LandingPageInner() {
+  const searchParams = useSearchParams();
+  // ?home=1 means the user is authenticated but explicitly navigated here
+  const isAuthenticatedVisit = searchParams.get('home') === '1';
+  const [isLoggedIn, setIsLoggedIn] = useState(isAuthenticatedVisit);
 
   useEffect(() => {
     const supabase = createBrowserClient();
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setIsLoggedIn(!!session);
+    supabase.auth.getSession().then((result: { data: { session: import('@supabase/supabase-js').Session | null } }) => {
+      setIsLoggedIn(!!result.data.session);
     });
   }, []);
 
@@ -130,5 +134,13 @@ export default function LandingPage() {
         </div>
       </footer>
     </main>
+  );
+}
+
+export default function LandingPage() {
+  return (
+    <Suspense>
+      <LandingPageInner />
+    </Suspense>
   );
 }
