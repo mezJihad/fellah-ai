@@ -879,35 +879,52 @@
 }
 
 .trackFrameWrap {
+  position: relative;
   width: 100%;
-  height: 80px;
+  aspect-ratio: 16 / 9;
 }
 
 .trackFrame {
+  position: absolute;
+  inset: 0;
   width: 100%;
-  height: 80px;
+  height: 100%;
   border: none;
-  border-radius: 0 0 var(--radius) var(--radius);
-}
-
-.trackOpenSpotify {
-  display: block;
-  text-align: right;
-  padding: 4px 12px 6px;
-  font-size: 0.72rem;
-  color: #1db954;
-  text-decoration: none;
-}
-
-.trackOpenSpotify:hover {
-  text-decoration: underline;
 }
 
 .trackBtnError {
-  border-color: #e2e8f0;
+  border-color: var(--border);
   color: var(--text-muted);
   cursor: default;
   background: transparent;
+}
+
+.playlistBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  padding: 10px;
+  margin-top: 4px;
+  border-radius: var(--radius);
+  border: 1px solid #ff0000;
+  background: #fff5f5;
+  color: #cc0000;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.playlistBtn:hover:not(:disabled) {
+  background: #ff0000;
+  color: #fff;
+}
+
+.playlistBtn:disabled {
+  opacity: 0.6;
+  cursor: wait;
 }
 
 /* ─────────────────────────────────────────────────────────────────────────

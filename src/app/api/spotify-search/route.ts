@@ -16,10 +16,34 @@ async function getSpotifyToken(): Promise<string> {
     },
     body: 'grant_type=client_credentials',
   });
+  if (!res.ok) {
+    const text = await res.text();
+    console.error(`❌ Spotify token HTTP ${res.status}:`, text.slice(0, 300));
+    throw new Error(`Spotify token error: ${res.status}`);
+  }
   const data = await res.json();
+  if (!data.access_token) {
+    console.error('❌ Spotify token manquant dans la réponse:', JSON.stringify(data));
+    throw new Error('No access token');
+  }
   cachedToken = data.access_token;
   tokenExpiry = Date.now() + (data.expires_in - 60) * 1000;
+  console.log('✅ Spotify token obtenu');
   return cachedToken!;
+}
+
+async function searchTrack(spotifyToken: string, query: string) {
+  const res = await fetch(
+    `https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=track&limit=1`,
+    { headers: { Authorization: `Bearer ${spotifyToken}` } }
+  );
+  if (!res.ok) {
+    const text = await res.text();
+    console.error(`❌ Spotify search HTTP ${res.status}:`, text.slice(0, 300));
+    return null;
+  }
+  const data = await res.json();
+  return data.tracks?.items?.[0] ?? null;
 }
 
 export async function GET(req: NextRequest) {
@@ -37,13 +61,22 @@ export async function GET(req: NextRequest) {
 
   try {
     const spotifyToken = await getSpotifyToken();
-    const q = encodeURIComponent(`track:${title} artist:${artist}`);
-    const res = await fetch(`https://api.spotify.com/v1/search?q=${q}&type=track&limit=1&market=MA`, {
-      headers: { Authorization: `Bearer ${spotifyToken}` },
-    });
-    const data = await res.json();
-    const track = data.tracks?.items?.[0];
-    if (!track) return NextResponse.json({ error: 'Introuvable' }, { status: 404 });
+
+    // Essai 1 : requête précise avec champs
+    let track = await searchTrack(spotifyToken, `track:${title} artist:${artist}`);
+
+    // Essai 2 : requête libre artiste + titre
+    if (!track) track = await searchTrack(spotifyToken, `${artist} ${title}`);
+
+    // Essai 3 : titre seul
+    if (!track) track = await searchTrack(spotifyToken, title);
+
+    if (!track) {
+      console.warn(`🎵 Spotify introuvable : "${title}" — "${artist}"`);
+      return NextResponse.json({ error: 'Introuvable' }, { status: 404 });
+    }
+
+    console.log(`🎵 Spotify trouvé : ${track.name} — ${track.artists[0]?.name} [${track.id}]`);
     return NextResponse.json({
       id: track.id,
       name: track.name,
@@ -51,7 +84,8 @@ export async function GET(req: NextRequest) {
       albumArt: track.album?.images?.[1]?.url ?? track.album?.images?.[0]?.url ?? null,
       spotifyUrl: track.external_urls?.spotify ?? null,
     });
-  } catch {
+  } catch (e) {
+    console.error('❌ Erreur Spotify search:', e);
     return NextResponse.json({ error: 'Erreur Spotify' }, { status: 500 });
   }
 }

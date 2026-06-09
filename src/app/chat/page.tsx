@@ -47,7 +47,7 @@ const EXPERTS = [
     description: 'Expert musical marocain et international — recommandations en Pop, Rock, Jazz, Gnawa, Chaâbi, Rap marocain, musique andalouse et fusion.',
     available: true,
     welcomeMessage: "Salam ! 🎵 Je suis Mgoun Musique, ton guide musical. Tu veux qu'on explore un genre précis, une humeur particulière… ou tu me laisses les commandes ?",
-    quickReplies: ["Surprends-moi 🎲", "Playlist thématique 🎧", "Musique marocaine 🎶", "Pop & Rock 🎸", "Ambiance détente 🌙"],
+    quickReplies: ["Surprends-moi 🎲", "Matin & Café ☕", "Motivation & Sport 💪", "Soirée Marocaine 🌙", "Nostalgie 🎞️", "Road Trip 🚗", "Détente & Zen 🧘", "Concentration 📚"],
   },
   {
     id: 'nutri',
@@ -112,13 +112,12 @@ function parseMusicBlock(text: string): { cleanText: string; tracks: MusicTrack[
   return { cleanText: text, tracks: [] };
 }
 
-type SpotifyState = 'idle' | 'loading' | 'loaded' | 'error';
+type TrackState = 'idle' | 'loading' | 'loaded' | 'error';
 
 function TrackCard({ track, authToken }: { track: MusicTrack; authToken: string }) {
-  const [state, setState] = useState<SpotifyState>('idle');
-  const [spotifyId, setSpotifyId] = useState<string | null>(null);
-  const [spotifyUrl, setSpotifyUrl] = useState<string | null>(null);
-  const searchUrl = `https://open.spotify.com/search/${encodeURIComponent(`${track.artist} ${track.title}`)}`;
+  const [state, setState] = useState<TrackState>('idle');
+  const [videoId, setVideoId] = useState<string | null>(null);
+  const searchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(`${track.artist} ${track.title}`)}`;
 
   async function handlePlay() {
     if (state === 'loaded') { setState('idle'); return; }
@@ -126,13 +125,12 @@ function TrackCard({ track, authToken }: { track: MusicTrack; authToken: string 
     setState('loading');
     try {
       const res = await fetch(
-        `/api/spotify-search?artist=${encodeURIComponent(track.artist)}&title=${encodeURIComponent(track.title)}`,
+        `/api/youtube-search?artist=${encodeURIComponent(track.artist)}&title=${encodeURIComponent(track.title)}`,
         { headers: { Authorization: `Bearer ${authToken}` } }
       );
       if (!res.ok) throw new Error();
       const data = await res.json();
-      setSpotifyId(data.id);
-      setSpotifyUrl(data.spotifyUrl);
+      setVideoId(data.videoId);
       setState('loaded');
     } catch {
       setState('error');
@@ -152,24 +150,20 @@ function TrackCard({ track, authToken }: { track: MusicTrack; authToken: string 
             {state === 'loading' ? '…' : state === 'loaded' ? '✕ Fermer' : state === 'error' ? 'Introuvable' : '▶ Écouter'}
           </button>
           <a href={searchUrl} target="_blank" rel="noopener noreferrer" className={styles.trackBtnSearch}>
-            Spotify ↗
+            YouTube ↗
           </a>
         </div>
       </div>
-      {state === 'loaded' && spotifyId && (
+      {state === 'loaded' && videoId && (
         <div className={styles.trackFrameWrap}>
           <iframe
             className={styles.trackFrame}
-            src={`https://open.spotify.com/embed/track/${spotifyId}?utm_source=generator&theme=0`}
-            allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-            loading="lazy"
+            src={`https://www.youtube.com/embed/${videoId}?autoplay=1`}
+            title={`${track.title} - ${track.artist}`}
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
           />
         </div>
-      )}
-      {state === 'loaded' && spotifyUrl && (
-        <a href={spotifyUrl} target="_blank" rel="noopener noreferrer" className={styles.trackOpenSpotify}>
-          Ouvrir dans Spotify ↗
-        </a>
       )}
     </div>
   );
@@ -177,13 +171,39 @@ function TrackCard({ track, authToken }: { track: MusicTrack; authToken: string 
 
 function TrackList({ tracks, supabase }: { tracks: MusicTrack[]; supabase: ReturnType<typeof import('@/lib/supabase-browser').createBrowserClient> }) {
   const [token, setToken] = useState<string | null>(null);
+  const [playlistLoading, setPlaylistLoading] = useState(false);
+
   useEffect(() => {
     supabase.auth.getSession().then((r: { data: { session: import('@supabase/supabase-js').Session | null } }) => setToken(r.data.session?.access_token ?? null));
   }, [supabase]);
+
   if (!token) return null;
+
+  async function launchPlaylist() {
+    if (!token) return;
+    setPlaylistLoading(true);
+    const results = await Promise.all(
+      tracks.map(t =>
+        fetch(`/api/youtube-search?artist=${encodeURIComponent(t.artist)}&title=${encodeURIComponent(t.title)}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+          .then(r => r.ok ? r.json() : null)
+          .catch(() => null)
+      )
+    );
+    const ids = results.filter((r): r is { videoId: string } => !!r?.videoId).map(r => r.videoId).join(',');
+    if (ids) window.open(`https://www.youtube.com/watch_videos?video_ids=${ids}`, '_blank');
+    setPlaylistLoading(false);
+  }
+
   return (
     <div className={styles.trackList}>
       {tracks.map((track, ti) => <TrackCard key={ti} track={track} authToken={token} />)}
+      {tracks.length > 1 && (
+        <button className={styles.playlistBtn} onClick={launchPlaylist} disabled={playlistLoading}>
+          {playlistLoading ? 'Chargement…' : '▶ Lancer la playlist sur YouTube'}
+        </button>
+      )}
     </div>
   );
 }
