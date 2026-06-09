@@ -57,7 +57,7 @@ const EXPERTS = [
     description: 'Expert en nutrition et rééquilibrage alimentaire — gastronomie marocaine, anti-gaspi, conseils restaurant, cuisine familiale.',
     available: true,
     welcomeMessage: "Salam ! Parlons de vos habitudes alimentaires. Par où voulez-vous commencer ?",
-    quickReplies: ["Rééquilibrer mon alimentation", "Conseils pour le couscous du vendredi", "Manger sainement au restaurant", "Menu famille anti-gaspi"],
+    quickReplies: ["Dîner en couple 🍷", "Batch cooking semaine 📦", "Sport & récupération 💪", "Dîner express 20 min ⚡", "Lunch box bureau 💼", "Réduire le sucre 🍬"],
   },
   {
     id: 'evasion',
@@ -66,7 +66,7 @@ const EXPERTS = [
     description: 'Travel Planner IA — itinéraires sur mesure depuis le Maroc, slow travel, familles, visas, liaisons aériennes réelles.',
     available: true,
     welcomeMessage: "Bonjour ! Parlons de votre prochain voyage. Où rêvez-vous d'aller ?",
-    quickReplies: ["Voyage famille au Maroc", "Europe sans visa", "Destination exotique", "Slow travel pas cher"],
+    quickReplies: ["Plages & Côtes 🏖️", "Nature & randonnées 🌿", "Road trip Maroc 🗺️", "Villes impériales 🕌", "Itinéraires Europe ✈️", "Lune de miel 💑", "Famille all-inclusive 👨‍👩‍👧", "Aventure & exotisme 🌍"],
   },
   {
     id: 'famille',
@@ -93,7 +93,7 @@ const EXPERTS = [
     description: 'Mentor stratégique en investissement et entrepreneuriat au Maroc — success stories locales, feuilles de route concrètes, réalités du marché marocain.',
     available: true,
     welcomeMessage: "Bonjour. Quelle est votre priorité actuelle pour vos projets au Maroc ?",
-    quickReplies: ["Financement & Subventions", "Analyser un secteur", "Inspiration & Success Stories", "Lancer une startup"],
+    quickReplies: ["J'ai 10.000 DH 💡", "Immobilier locatif 🏠", "Agri-business rentable 🌱", "Business digital 📱", "Bourse de Casablanca 📈", "Franchise locale 🏪", "Décryptage success story 🚀", "Investir à plusieurs 🤝"],
   },
 ];
 
