@@ -3,7 +3,7 @@
 export const dynamic = 'force-dynamic';
 
 import { useEffect, useRef, useState, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -26,6 +26,7 @@ const EXPERTS = [
       "Botola & Lions de l'Atlas ⚽",
       "Planète Sport 🏟️",
       "Divertissements & Culture 🎬",
+      "Livre du Jour 📚",
       "Marocains du Monde 🌍",
       "Tech & Innovation 💡",
       "Économie & Bourse 📈",
@@ -218,12 +219,14 @@ function toAssistantMessage(expertId: string, text: string): Message {
 
 function ChatPageInner() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const expertParam = searchParams.get('expert');
   const initialExpert = EXPERTS.find(e => e.id === expertParam) ? expertParam! : 'news';
 
   const [supabase] = useState(() => createBrowserClient());
 
   // ── Auth ──────────────────────────────────────────────────────────────────
+  const [authReady, setAuthReady] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [authMode, setAuthMode] = useState<AuthMode>('signup');
   const [email, setEmail] = useState('');
@@ -234,7 +237,9 @@ function ChatPageInner() {
 
   // ── Chat ──────────────────────────────────────────────────────────────────
   const [selectedExpert, setSelectedExpert] = useState(initialExpert);
-  const [mobileView, setMobileView] = useState<'list' | 'chat'>('list');
+  const [mobileView, setMobileView] = useState<'list' | 'chat'>(
+    EXPERTS.find(e => e.id === expertParam) ? 'chat' : 'list'
+  );
   const [messages, setMessages] = useState<Record<string, Message[]>>({});
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -279,6 +284,7 @@ function ChatPageInner() {
   useEffect(() => {
     supabase.auth.getSession().then((result: { data: { session: Session | null } }) => {
       setUser(result.data.session?.user ?? null);
+      setAuthReady(true);
     });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event: AuthChangeEvent, session: Session | null) => {
       setUser(session?.user ?? null);
@@ -292,7 +298,7 @@ function ChatPageInner() {
   useEffect(() => { selectedExpertRef.current = selectedExpert; }, [selectedExpert]);
 
   useEffect(() => {
-    if (user) loadHistory(selectedExpert);
+    if (user) EXPERTS.forEach(exp => loadHistory(exp.id));
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
@@ -557,6 +563,7 @@ function ChatPageInner() {
   function selectExpert(id: string) {
     setSelectedExpert(id);
     setMobileView('chat');
+    router.replace(`/chat?expert=${id}`, { scroll: false });
     setInput('');
     if (id !== 'agri') {
       setImageData(null);
@@ -575,11 +582,13 @@ function ChatPageInner() {
   // ══════════════════════════════════════════════════════════════════════════
   // AUTH GATE
   // ══════════════════════════════════════════════════════════════════════════
+  if (!authReady) return null;
   if (!user) {
     return (
       <div className={styles.authLayout}>
         <div className={styles.authCard}>
-          <div className={styles.authLogo}>🌾</div>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/favicon.svg" alt="Mgoun AI" width={48} height={48} className={styles.authLogo} />
           <h1 className={styles.authTitle}>Mgoun AI</h1>
 
           {authMode === 'confirm' ? (
@@ -631,7 +640,7 @@ function ChatPageInner() {
       <header className={styles.header}>
         <div className={styles.headerLeft}>
           {mobileView === 'chat' && (
-            <button className={styles.backBtn} onClick={() => setMobileView('list')} aria-label="Retour">
+            <button className={styles.backBtn} onClick={() => { setMobileView('list'); router.replace('/chat', { scroll: false }); }} aria-label="Retour">
               ←
             </button>
           )}
@@ -641,7 +650,7 @@ function ChatPageInner() {
             <span className={`${styles.logo} ${mobileView === 'chat' ? styles.logoHiddenMobile : ''}`}>Mgoun AI</span>
           </Link>
           {mobileView === 'chat' && (
-            <span className={styles.expertNameMobile}>{expert.icon} {expert.name}</span>
+            <span className={styles.expertNameMobile}>{expert.name}</span>
           )}
         </div>
         <div className={styles.headerRight}>
