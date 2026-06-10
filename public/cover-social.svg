@@ -1,0 +1,119 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1640 624" width="1640" height="624">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#08532a"/>
+      <stop offset="55%" stop-color="#16a34a"/>
+      <stop offset="100%" stop-color="#1cb85a"/>
+    </linearGradient>
+    <linearGradient id="pillBg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.18"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0.07"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1640" height="624" fill="url(#bg)"/>
+
+  <!-- Decorative mountain silhouette — back layer -->
+  <path d="M0,624 L0,480 L110,370 L200,440 L310,290 L420,390 L540,240 L650,340 L780,210 L900,320 L1040,195 L1160,310 L1300,230 L1430,330 L1560,270 L1640,320 L1640,624 Z"
+    fill="white" opacity="0.04"/>
+
+  <!-- Decorative mountain silhouette — front layer -->
+  <path d="M0,624 L0,530 L160,430 L280,500 L420,370 L540,450 L680,340 L800,440 L950,330 L1080,430 L1220,360 L1360,450 L1500,390 L1640,460 L1640,624 Z"
+    fill="white" opacity="0.05"/>
+
+  <!-- ── LEFT — Mountain M logo mark ── -->
+  <polyline
+    points="72,430 198,150 278,290 358,150 484,430"
+    fill="none"
+    stroke="white"
+    stroke-width="50"
+    stroke-linejoin="round"
+    stroke-linecap="round"
+    filter="url(#glow)"
+  />
+  <!-- Snow cap — left peak -->
+  <polyline
+    points="166,200 198,150 230,200"
+    fill="none" stroke="#a7f3d0" stroke-width="13"
+    stroke-linejoin="round" stroke-linecap="round" opacity="0.75"/>
+  <!-- Snow cap — right peak -->
+  <polyline
+    points="326,200 358,150 390,200"
+    fill="none" stroke="#a7f3d0" stroke-width="13"
+    stroke-linejoin="round" stroke-linecap="round" opacity="0.75"/>
+  <!-- AI sparkle dot -->
+  <circle cx="376" cy="136" r="16" fill="#fbbf24"/>
+  <circle cx="376" cy="136" r="9"  fill="white"/>
+
+  <!-- Vertical divider -->
+  <line x1="548" y1="110" x2="548" y2="430" stroke="white" stroke-width="1" stroke-opacity="0.18"/>
+
+  <!-- ── CENTER / RIGHT — Branding ── -->
+  <!-- MGOUN -->
+  <text x="596" y="255"
+    font-family="'Arial Black', 'Helvetica Neue', Arial, sans-serif"
+    font-size="108"
+    font-weight="900"
+    fill="white"
+    letter-spacing="5">MGOUN</text>
+
+  <!-- AI -->
+  <text x="600" y="335"
+    font-family="'Arial Black', 'Helvetica Neue', Arial, sans-serif"
+    font-size="76"
+    font-weight="900"
+    fill="#fbbf24"
+    letter-spacing="18">AI</text>
+
+  <!-- Tagline -->
+  <text x="602" y="390"
+    font-family="Arial, Helvetica, sans-serif"
+    font-size="27"
+    font-weight="700"
+    fill="white"
+    opacity="0.90"
+    letter-spacing="3">VOS EXPERTS IA À PORTÉE DE MAIN</text>
+
+  <!-- ── BOTTOM — Expert pills, 2 rows of 4 ── -->
+
+  <!-- Row 1 : News · Equilibre · Musique · Nutri -->
+  <rect x="40"   y="452" width="376" height="46" rx="23" fill="url(#pillBg)" stroke="white" stroke-width="1" stroke-opacity="0.28"/>
+  <text x="228"  y="482" font-family="Arial, sans-serif" font-size="22" fill="white" text-anchor="middle">📰 News</text>
+
+  <rect x="434"  y="452" width="376" height="46" rx="23" fill="url(#pillBg)" stroke="white" stroke-width="1" stroke-opacity="0.28"/>
+  <text x="622"  y="482" font-family="Arial, sans-serif" font-size="22" fill="white" text-anchor="middle">🧘 Equilibre</text>
+
+  <rect x="828"  y="452" width="376" height="46" rx="23" fill="url(#pillBg)" stroke="white" stroke-width="1" stroke-opacity="0.28"/>
+  <text x="1016" y="482" font-family="Arial, sans-serif" font-size="22" fill="white" text-anchor="middle">🎵 Musique</text>
+
+  <rect x="1222" y="452" width="376" height="46" rx="23" fill="url(#pillBg)" stroke="white" stroke-width="1" stroke-opacity="0.28"/>
+  <text x="1410" y="482" font-family="Arial, sans-serif" font-size="22" fill="white" text-anchor="middle">🥗 Nutri</text>
+
+  <!-- Row 2 : Évasion · Famille · AGRI · Invest -->
+  <rect x="40"   y="506" width="376" height="46" rx="23" fill="url(#pillBg)" stroke="white" stroke-width="1" stroke-opacity="0.28"/>
+  <text x="228"  y="536" font-family="Arial, sans-serif" font-size="22" fill="white" text-anchor="middle">🌍 Évasion</text>
+
+  <rect x="434"  y="506" width="376" height="46" rx="23" fill="url(#pillBg)" stroke="white" stroke-width="1" stroke-opacity="0.28"/>
+  <text x="622"  y="536" font-family="Arial, sans-serif" font-size="22" fill="white" text-anchor="middle">🏡 Famille</text>
+
+  <rect x="828"  y="506" width="376" height="46" rx="23" fill="url(#pillBg)" stroke="white" stroke-width="1" stroke-opacity="0.28"/>
+  <text x="1016" y="536" font-family="Arial, sans-serif" font-size="22" fill="white" text-anchor="middle">🌾 AGRI</text>
+
+  <rect x="1222" y="506" width="376" height="46" rx="23" fill="url(#pillBg)" stroke="white" stroke-width="1" stroke-opacity="0.28"/>
+  <text x="1410" y="536" font-family="Arial, sans-serif" font-size="22" fill="white" text-anchor="middle">📈 Invest</text>
+
+  <!-- ── BOTTOM BAR ── -->
+  <rect x="0" y="562" width="1640" height="62" fill="black" opacity="0.20"/>
+  <text x="820" y="601"
+    font-family="Arial, Helvetica, sans-serif"
+    font-size="22"
+    fill="white"
+    opacity="0.72"
+    text-anchor="middle"
+    letter-spacing="3">mgounai.com</text>
+</svg>

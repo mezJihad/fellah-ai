@@ -1,10 +1,8 @@
 import { GoogleGenerativeAI, type Part } from '@google/generative-ai';
-import OpenAI from 'openai';
 import { getHistory, saveHistory, getHistoryByAccountId, saveHistoryByAccountId, type ChatMessage } from './conversationStore';
 import { retrieveContext } from './ragStore';
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY || '' });
 
 const NEWS_TOPIC_KEYWORDS: Record<string, string[]> = {
   'Politique & Société':        ['politique', 'société', 'gouvernement', 'institution', 'réforme'],
@@ -679,21 +677,6 @@ STRUCTURE DE TES RÉPONSES :
   },
 };
 
-async function fallbackToOpenAI(systemInstruction: string, history: ChatMessage[]): Promise<string> {
-  const openaiHistory: { role: string; content: string }[] = [
-    { role: 'system', content: systemInstruction },
-    ...history.map(msg => ({
-      role: msg.role === 'model' ? 'assistant' : 'user',
-      content: msg.parts[0].text,
-    })),
-  ];
-  const response = await openai.chat.completions.create({
-    model: 'gpt-4o-mini',
-    messages: openaiHistory as never,
-    max_tokens: 800,
-  });
-  return response.choices[0].message.content || "Désolé, j'ai eu un problème. Veuillez réessayer.";
-}
 
 export async function runAgent(
   expert: ExpertConfig,
@@ -760,17 +743,8 @@ export async function runAgent(
     llmResponseText = result.response.text();
     console.log(`✅ [${expert.id}] Réponse Gemini générée.`);
   } catch (error) {
-    console.error(`❌ [${expert.id}] Erreur Gemini (fallback OpenAI):`, error);
-    try {
-      llmResponseText = await fallbackToOpenAI(expert.systemInstruction, [
-        ...llmHistory,
-        { role: 'user', parts: [{ text: userText || '[Image envoyée]' }] },
-      ]);
-      console.log(`✅ [${expert.id}] Réponse OpenAI fallback générée.`);
-    } catch (fallbackError) {
-      console.error(`❌ [${expert.id}] Erreur critique OpenAI:`, fallbackError);
-      llmResponseText = 'Désolé, le service est temporairement indisponible. Veuillez réessayer.';
-    }
+    console.error(`❌ [${expert.id}] Erreur Gemini:`, error);
+    llmResponseText = 'Le service est temporairement indisponible. Veuillez réessayer dans quelques instants.';
   }
 
   const savedUserText = imageData ? `[Photo envoyée] ${userText || ''}`.trim() : userText;

@@ -249,33 +249,170 @@
   color: var(--text);
 }
 
-.userEmail {
-  font-size: 0.8rem;
+/* ── User avatar + dropdown ── */
+.userMenuWrapper {
+  position: relative;
+}
+
+.userAvatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--green);
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: inherit;
+  flex-shrink: 0;
+  transition: background 0.15s, box-shadow 0.15s;
+}
+
+.userAvatar:hover {
+  background: var(--green-hover);
+  box-shadow: 0 0 0 3px var(--green-light);
+}
+
+.userDropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+  min-width: 210px;
+  z-index: 200;
+  overflow: hidden;
+  padding: 5px;
+}
+
+.userDropdownEmail {
+  padding: 8px 12px 10px;
+  font-size: 0.78rem;
   color: var(--text-muted);
-  max-width: 160px;
+  font-weight: 500;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  display: none;
 }
 
-.logoutBtn {
+.userDropdownDivider {
+  height: 1px;
+  background: var(--border);
+  margin: 2px 0;
+}
+
+.userDropdownItem {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 9px 12px;
+  border: none;
   background: none;
-  border: 1px solid var(--border);
   border-radius: 7px;
-  color: var(--text-muted);
-  font-size: 0.8rem;
-  padding: 5px 11px;
+  font-size: 0.875rem;
+  color: var(--text);
   cursor: pointer;
-  transition: border-color 0.15s, color 0.15s, background 0.15s;
-  white-space: nowrap;
   font-family: inherit;
+  text-decoration: none;
+  transition: background 0.12s;
 }
 
-.logoutBtn:hover {
-  border-color: var(--green);
-  color: var(--green);
-  background: var(--green-light);
+.userDropdownItem:hover {
+  background: var(--sidebar-bg);
+}
+
+.userDropdownDanger {
+  color: #ef4444;
+}
+
+.userDropdownDanger:hover {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+/* ── Delete confirmation modal ── */
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.modalCard {
+  background: #fff;
+  border-radius: 14px;
+  padding: 28px 28px 24px;
+  max-width: 380px;
+  width: 100%;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.18);
+}
+
+.modalTitle {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0 0 8px;
+}
+
+.modalDesc {
+  font-size: 0.875rem;
+  color: #64748b;
+  line-height: 1.65;
+  margin: 0 0 22px;
+}
+
+.modalActions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.modalCancelBtn {
+  background: none;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 8px 18px;
+  font-size: 0.875rem;
+  color: #64748b;
+  cursor: pointer;
+  font-family: inherit;
+  transition: border-color 0.15s;
+}
+
+.modalCancelBtn:hover {
+  border-color: #94a3b8;
+}
+
+.modalDeleteBtn {
+  background: #ef4444;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 18px;
+  font-size: 0.875rem;
+  color: #fff;
+  cursor: pointer;
+  font-family: inherit;
+  font-weight: 600;
+  transition: background 0.15s;
+}
+
+.modalDeleteBtn:hover:not(:disabled) {
+  background: #dc2626;
+}
+
+.modalDeleteBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .homeBtn {

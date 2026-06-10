@@ -251,6 +251,10 @@ function ChatPageInner() {
   const [hasMoreHistory, setHasMoreHistory] = useState<Record<string, boolean>>({});
   const [historyStartIndex, setHistoryStartIndex] = useState<Record<string, number>>({});
   const [loadingOlder, setLoadingOlder] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [showUserMenu, setShowUserMenu] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement>(null);
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const messagesRef = useRef<HTMLDivElement>(null);
@@ -326,6 +330,16 @@ function ChatPageInner() {
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, loading, selectedExpert]);
+
+  useEffect(() => {
+    function onClickOutside(e: MouseEvent) {
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
+        setShowUserMenu(false);
+      }
+    }
+    document.addEventListener('mousedown', onClickOutside);
+    return () => document.removeEventListener('mousedown', onClickOutside);
+  }, []);
 
   // ── Auth helpers ──────────────────────────────────────────────────────────
   function switchMode(mode: AuthMode) {
@@ -426,6 +440,28 @@ function ChatPageInner() {
     setPassword('');
     setConfirmPassword('');
     setAuthError('');
+  }
+
+  async function deleteAccount() {
+    setDeleteLoading(true);
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) { setDeleteLoading(false); return; }
+    const res = await fetch('/api/delete-account', {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${session.access_token}` },
+    });
+    if (res.ok) {
+      await supabase.auth.signOut();
+      setShowDeleteConfirm(false);
+      setMessages({});
+      setLoadedExperts(new Set());
+      localStorage.removeItem('mgoun_last_email');
+      setAuthMode('signup');
+      setEmail('');
+    } else {
+      setDeleteLoading(false);
+      alert('Une erreur est survenue. Veuillez réessayer ou contacter le support.');
+    }
   }
 
   // ── Chat helpers ──────────────────────────────────────────────────────────
@@ -654,9 +690,33 @@ function ChatPageInner() {
           )}
         </div>
         <div className={styles.headerRight}>
-          <span className={styles.userEmail}>{user.email}</span>
           <Link href="/?home=1" className={styles.homeBtn}>Accueil</Link>
-          <button className={styles.logoutBtn} onClick={logout}>Déconnexion</button>
+          <div className={styles.userMenuWrapper} ref={userMenuRef}>
+            <button
+              className={styles.userAvatar}
+              onClick={() => setShowUserMenu(v => !v)}
+              aria-label="Mon compte"
+              aria-expanded={showUserMenu}
+            >
+              {user.email?.[0].toUpperCase()}
+            </button>
+            {showUserMenu && (
+              <div className={styles.userDropdown}>
+                <div className={styles.userDropdownEmail}>{user.email}</div>
+                <div className={styles.userDropdownDivider} />
+                <Link href="/?home=1" className={styles.userDropdownItem} onClick={() => setShowUserMenu(false)}>
+                  Accueil
+                </Link>
+                <div className={styles.userDropdownDivider} />
+                <button className={styles.userDropdownItem} onClick={() => { setShowUserMenu(false); logout(); }}>
+                  Déconnexion
+                </button>
+                <button className={`${styles.userDropdownItem} ${styles.userDropdownDanger}`} onClick={() => { setShowUserMenu(false); setShowDeleteConfirm(true); }}>
+                  Supprimer mon compte
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </header>
 
@@ -817,6 +877,26 @@ function ChatPageInner() {
           </div>
         </main>
       </div>
+
+      {/* ── Modal suppression de compte ── */}
+      {showDeleteConfirm && (
+        <div className={styles.modalOverlay} onClick={() => !deleteLoading && setShowDeleteConfirm(false)}>
+          <div className={styles.modalCard} onClick={e => e.stopPropagation()}>
+            <p className={styles.modalTitle}>Supprimer mon compte</p>
+            <p className={styles.modalDesc}>
+              Cette action est <strong>irréversible</strong>. Toutes vos conversations et données seront supprimées définitivement. Votre compte ne pourra pas être récupéré.
+            </p>
+            <div className={styles.modalActions}>
+              <button className={styles.modalCancelBtn} onClick={() => setShowDeleteConfirm(false)} disabled={deleteLoading}>
+                Annuler
+              </button>
+              <button className={styles.modalDeleteBtn} onClick={deleteAccount} disabled={deleteLoading}>
+                {deleteLoading ? 'Suppression…' : 'Supprimer définitivement'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

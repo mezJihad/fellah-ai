@@ -94,7 +94,7 @@ function LandingPageInner() {
             <span>dans votre poche</span>
           </h1>
           <p className="hero-description">
-            Mgoun AI regroupe 8 assistants intelligents spécialisés, accessibles directement via WhatsApp ou sur le web — en Darija, français ou arabe.
+            Mgoun AI regroupe des assistants intelligents spécialisés, accessibles directement via WhatsApp ou sur le web — en Darija, français ou arabe.
           </p>
           <Link href="/chat" className="btn-start">
             {isLoggedIn ? 'Retour au chat →' : 'Discuter avec un expert →'}
@@ -105,7 +105,7 @@ function LandingPageInner() {
       {/* EXPERTS GRID */}
       <section className="experts-section">
         <div className="container">
-          <h2 className="section-title animate-fade-in">Nos 8 experts</h2>
+          <h2 className="section-title animate-fade-in">Nos experts</h2>
           <div className="experts-grid">
             {EXPERTS.map((expert, i) => (
               <div
@@ -130,7 +130,73 @@ function LandingPageInner() {
       {/* FOOTER */}
       <footer className="footer">
         <div className="container">
-          <p>© 2026 Mgoun AI · Maroc</p>
+          <div className="footer-grid">
+
+            {/* Colonne 1 — Marque */}
+            <div>
+              <div className="footer-brand-logo">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/favicon.svg" alt="Mgoun AI" width={22} height={22} style={{ borderRadius: 5 }} />
+                Mgoun AI
+              </div>
+              <p className="footer-brand-desc">
+                Plateforme marocaine d&apos;experts IA spécialisés, accessibles directement depuis votre navigateur ou votre mobile.
+              </p>
+              <div className="footer-social">
+                {/* Instagram */}
+                <a href="https://www.instagram.com/mgounai/" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/>
+                  </svg>
+                </a>
+                {/* Facebook */}
+                <a href="https://www.facebook.com/profile.php?id=61590647733785" target="_blank" rel="noopener noreferrer" aria-label="Facebook">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/>
+                  </svg>
+                </a>
+              </div>
+            </div>
+
+            {/* Colonne 2 — Experts */}
+            <div>
+              <div className="footer-col-title">Nos Experts</div>
+              <ul className="footer-links">
+                {EXPERTS.map(e => (
+                  <li key={e.id}>
+                    <Link href={`/chat?expert=${e.id}`}>{e.icon} {e.name}</Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Colonne 3 — Plateforme */}
+            <div>
+              <div className="footer-col-title">Plateforme</div>
+              <ul className="footer-links">
+                <li><Link href="/chat">💬 Démarrer une discussion</Link></li>
+                <li><a href="https://www.instagram.com/mgounai/" target="_blank" rel="noopener noreferrer">📸 Instagram</a></li>
+                <li><a href="https://www.facebook.com/profile.php?id=61590647733785" target="_blank" rel="noopener noreferrer">👥 Facebook</a></li>
+              </ul>
+            </div>
+
+            {/* Colonne 4 — Légal */}
+            <div>
+              <div className="footer-col-title">Informations</div>
+              <ul className="footer-links">
+                <li><Link href="/a-propos">À propos</Link></li>
+                <li><Link href="/contact">Contact</Link></li>
+                <li><Link href="/cgu">Conditions d&apos;utilisation</Link></li>
+                <li><Link href="/confidentialite">Politique de confidentialité</Link></li>
+                <li><Link href="/mentions-legales">Mentions légales</Link></li>
+              </ul>
+            </div>
+
+          </div>
+
+          <div className="footer-bottom">
+            © 2026 Mgoun AI · Maroc · Tous droits réservés
+          </div>
         </div>
       </footer>
     </main>
