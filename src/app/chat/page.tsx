@@ -115,6 +115,10 @@ function parseMusicBlock(text: string): { cleanText: string; tracks: MusicTrack[
 
 type TrackState = 'idle' | 'loading' | 'loaded' | 'error';
 
+function isTouchDevice() {
+  return typeof window !== 'undefined' && ('ontouchstart' in window || navigator.maxTouchPoints > 0);
+}
+
 function TrackCard({ track, authToken }: { track: MusicTrack; authToken: string }) {
   const [state, setState] = useState<TrackState>('idle');
   const [videoId, setVideoId] = useState<string | null>(null);
@@ -124,6 +128,11 @@ function TrackCard({ track, authToken }: { track: MusicTrack; authToken: string 
     if (state === 'loaded') { setState('idle'); return; }
     if (state === 'loading') return;
     setState('loading');
+    // On mobile, open window synchronously before any await — browsers block
+    // window.open() called after an async operation (not a direct user gesture).
+    // On desktop, keep the embedded iframe experience.
+    const mobile = isTouchDevice();
+    const win = mobile ? window.open('', '_blank') : null;
     try {
       const res = await fetch(
         `/api/youtube-search?artist=${encodeURIComponent(track.artist)}&title=${encodeURIComponent(track.title)}`,
@@ -131,9 +140,15 @@ function TrackCard({ track, authToken }: { track: MusicTrack; authToken: string 
       );
       if (!res.ok) throw new Error();
       const data = await res.json();
-      setVideoId(data.videoId);
-      setState('loaded');
+      if (mobile && win) {
+        win.location.href = `https://www.youtube.com/watch?v=${data.videoId}`;
+        setState('idle');
+      } else {
+        setVideoId(data.videoId);
+        setState('loaded');
+      }
     } catch {
+      win?.close();
       setState('error');
     }
   }
@@ -183,6 +198,9 @@ function TrackList({ tracks, supabase }: { tracks: MusicTrack[]; supabase: Retur
   async function launchPlaylist() {
     if (!token) return;
     setPlaylistLoading(true);
+    // Open the window synchronously before any await — mobile browsers (iOS Safari)
+    // block window.open() calls that happen after an async operation.
+    const win = window.open('', '_blank');
     const results = await Promise.all(
       tracks.map(t =>
         fetch(`/api/youtube-search?artist=${encodeURIComponent(t.artist)}&title=${encodeURIComponent(t.title)}`, {
@@ -193,7 +211,11 @@ function TrackList({ tracks, supabase }: { tracks: MusicTrack[]; supabase: Retur
       )
     );
     const ids = results.filter((r): r is { videoId: string } => !!r?.videoId).map(r => r.videoId).join(',');
-    if (ids) window.open(`https://www.youtube.com/watch_videos?video_ids=${ids}`, '_blank');
+    if (ids && win) {
+      win.location.href = `https://www.youtube.com/watch_videos?video_ids=${ids}`;
+    } else {
+      win?.close();
+    }
     setPlaylistLoading(false);
   }
 
