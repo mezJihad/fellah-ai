@@ -900,6 +900,36 @@
     width: 44px;
     height: 44px;
   }
+
+  .trackBtn,
+  .trackBtnSearch {
+    padding: 8px 14px;
+    font-size: 0.82rem;
+    min-height: 36px;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .trackMeta {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .trackInfo {
+    width: 100%;
+    flex: none;
+  }
+
+  .trackActions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .msgActionBtn {
+    padding: 6px 13px;
+    font-size: 0.8rem;
+    min-height: 34px;
+  }
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -1062,6 +1092,82 @@
 .playlistBtn:disabled {
   opacity: 0.6;
   cursor: wait;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   MESSAGE ACTIONS (Copier / Partager)
+───────────────────────────────────────────────────────────────────────── */
+.msgActions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-top: 8px;
+  margin-top: 8px;
+  border-top: 1px solid var(--border);
+}
+
+.msgActionBtn {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 4px 11px;
+  font-size: 0.76rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-family: inherit;
+  white-space: nowrap;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+
+.msgActionBtn:hover {
+  border-color: var(--green);
+  color: var(--green);
+  background: var(--green-light);
+}
+
+.msgActionBtnSuccess {
+  border-color: var(--green) !important;
+  color: var(--green) !important;
+  background: var(--green-light) !important;
+}
+
+.shareWrapper {
+  position: relative;
+}
+
+.shareMenu {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+  overflow: hidden;
+  min-width: 170px;
+  z-index: 100;
+}
+
+.shareMenuItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 14px;
+  border: none;
+  background: none;
+  color: var(--text);
+  font-size: 0.875rem;
+  font-family: inherit;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.12s;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.shareMenuItem:hover {
+  background: var(--sidebar-bg);
 }
 
 /* ─────────────────────────────────────────────────────────────────────────

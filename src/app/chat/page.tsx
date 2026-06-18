@@ -115,8 +115,114 @@ function parseMusicBlock(text: string): { cleanText: string; tracks: MusicTrack[
 
 type TrackState = 'idle' | 'loading' | 'loaded' | 'error';
 
+function stripMarkdown(text: string): string {
+  return text
+    .replace(/#{1,6}\s+/g, '')
+    .replace(/\*\*(.*?)\*\*/g, '$1')
+    .replace(/\*(.*?)\*/g, '$1')
+    .replace(/`(.*?)`/g, '$1')
+    .replace(/\[(.*?)\]\(.*?\)/g, '$1')
+    .replace(/^[-*]\s+/gm, '• ')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
+function MessageActions({ text, expertName }: { text: string; expertName: string }) {
+  const [copied, setCopied] = useState(false);
+  const [showShareMenu, setShowShareMenu] = useState(false);
+  const shareMenuRef = useRef<HTMLDivElement>(null);
+  const plainText = stripMarkdown(text);
+  const shareText = `${expertName} — Mgoun AI\n\n${plainText}`;
+
+  useEffect(() => {
+    if (!showShareMenu) return;
+    function onClickOutside(e: MouseEvent) {
+      if (shareMenuRef.current && !shareMenuRef.current.contains(e.target as Node)) {
+        setShowShareMenu(false);
+      }
+    }
+    document.addEventListener('mousedown', onClickOutside);
+    return () => document.removeEventListener('mousedown', onClickOutside);
+  }, [showShareMenu]);
+
+  async function handleCopy() {
+    try {
+      await navigator.clipboard.writeText(plainText);
+    } catch {
+      const el = document.createElement('textarea');
+      el.value = plainText;
+      document.body.appendChild(el);
+      el.select();
+      document.execCommand('copy');
+      document.body.removeChild(el);
+    }
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+
+  async function handleShare() {
+    if (navigator.share) {
+      try { await navigator.share({ title: `Mgoun AI — ${expertName}`, text: shareText }); } catch { /* annulé */ }
+    } else {
+      setShowShareMenu(v => !v);
+    }
+  }
+
+  const enc = encodeURIComponent(shareText);
+  const whatsappUrl = `https://wa.me/?text=${enc}`;
+  const telegramUrl = `https://t.me/share/url?url=${encodeURIComponent('https://mgoun.ai')}&text=${enc}`;
+
+  return (
+    <div className={styles.msgActions}>
+      <button
+        className={`${styles.msgActionBtn} ${copied ? styles.msgActionBtnSuccess : ''}`}
+        onClick={handleCopy}
+        title="Copier la réponse"
+      >
+        {copied ? '✓ Copié' : '📋 Copier'}
+      </button>
+      <div className={styles.shareWrapper} ref={shareMenuRef}>
+        <button className={styles.msgActionBtn} onClick={handleShare} title="Partager">
+          ↗ Partager
+        </button>
+        {showShareMenu && (
+          <div className={styles.shareMenu}>
+            <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className={styles.shareMenuItem} onClick={() => setShowShareMenu(false)}>
+              💬 WhatsApp
+            </a>
+            <a href={telegramUrl} target="_blank" rel="noopener noreferrer" className={styles.shareMenuItem} onClick={() => setShowShareMenu(false)}>
+              ✈️ Telegram
+            </a>
+            <button className={styles.shareMenuItem} onClick={() => { handleCopy(); setShowShareMenu(false); }}>
+              📋 Copier le texte
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function isTouchDevice() {
   return typeof window !== 'undefined' && ('ontouchstart' in window || navigator.maxTouchPoints > 0);
+}
+
+// Opens a new tab immediately (required for iOS — popup must be opened synchronously
+// in the user gesture, before any async work) and writes a loading page so iOS Safari
+// does not kill the tab while we wait for the API response.
+function openMobileTab(): Window | null {
+  const win = window.open('', '_blank');
+  if (win) {
+    win.document.write(
+      '<!DOCTYPE html><html><head><meta charset="utf-8">' +
+      '<meta name="viewport" content="width=device-width,initial-scale=1">' +
+      '<style>body{margin:0;background:#000;display:flex;align-items:center;' +
+      'justify-content:center;height:100vh;color:#fff;font-family:sans-serif;font-size:1rem}' +
+      '</style></head><body>Chargement…</body></html>'
+    );
+    win.document.close();
+  }
+  return win;
 }
 
 function TrackCard({ track, authToken }: { track: MusicTrack; authToken: string }) {
@@ -128,11 +234,10 @@ function TrackCard({ track, authToken }: { track: MusicTrack; authToken: string 
     if (state === 'loaded') { setState('idle'); return; }
     if (state === 'loading') return;
     setState('loading');
-    // On mobile, open window synchronously before any await — browsers block
-    // window.open() called after an async operation (not a direct user gesture).
-    // On desktop, keep the embedded iframe experience.
     const mobile = isTouchDevice();
-    const win = mobile ? window.open('', '_blank') : null;
+    // Open synchronously in the user gesture, then write loading HTML so iOS
+    // Safari keeps the tab alive while we wait for the API response.
+    const win = mobile ? openMobileTab() : null;
     try {
       const res = await fetch(
         `/api/youtube-search?artist=${encodeURIComponent(track.artist)}&title=${encodeURIComponent(track.title)}`,
@@ -198,9 +303,11 @@ function TrackList({ tracks, supabase }: { tracks: MusicTrack[]; supabase: Retur
   async function launchPlaylist() {
     if (!token) return;
     setPlaylistLoading(true);
-    // Open the window synchronously before any await — mobile browsers (iOS Safari)
-    // block window.open() calls that happen after an async operation.
-    const win = window.open('', '_blank');
+    // Open synchronously in the user gesture and write loading HTML immediately —
+    // iOS Safari kills blank popup tabs after ~1s if they receive no content.
+    // Writing HTML keeps the tab alive while all 10 fetch calls complete.
+    const mobile = isTouchDevice();
+    const win = mobile ? openMobileTab() : window.open('', '_blank');
     const results = await Promise.all(
       tracks.map(t =>
         fetch(`/api/youtube-search?artist=${encodeURIComponent(t.artist)}&title=${encodeURIComponent(t.title)}`, {
@@ -806,6 +913,9 @@ function ChatPageInner() {
                   )}
                   {msg.tracks && msg.tracks.length > 0 && (
                     <TrackList tracks={msg.tracks} supabase={supabase} />
+                  )}
+                  {msg.role === 'assistant' && msg.text && (
+                    <MessageActions text={msg.text} expertName={expert.name} />
                   )}
                 </div>
               ))
