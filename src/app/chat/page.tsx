@@ -65,8 +65,8 @@ const EXPERTS = [
     icon: '🌍',
     description: 'Travel Planner IA — itinéraires sur mesure depuis le Maroc, slow travel, familles, visas, liaisons aériennes réelles.',
     available: true,
-    welcomeMessage: "Bonjour ! Parlons de votre prochain voyage. Où rêvez-vous d'aller ?",
-    quickReplies: ["Plages & Côtes 🏖️", "Nature & randonnées 🌿", "Road trip Maroc 🗺️", "Villes impériales 🕌", "Itinéraires Europe ✈️", "Lune de miel 💑", "Famille all-inclusive 👨‍👩‍👧", "Aventure & exotisme 🌍"],
+    welcomeMessage: "Marhaba ! Je suis Mgoun Évasion, votre expert voyage IA. Pour vous dénicher l'escapade parfaite au Maroc ou à l'étranger, j'ai juste besoin de deux petites précisions :\n1. Partez-vous en solo, en couple, en famille ou entre amis ?\n2. Disposez-vous d'un visa Schengen en cours de validité ?",
+    quickReplies: ["🇲🇦 Redécouvrir le Maroc", "✈️ Évasion Sans Visa", "🌍 Monde & Europe", "💑 Lune de miel", "👨‍👩‍👧 Famille", "💡 Aventure & Thèmes"],
   },
   {
     id: 'famille',
