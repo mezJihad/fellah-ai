@@ -147,6 +147,58 @@
 
 .switchBtn:hover { text-decoration: underline; }
 
+.oauthButtons {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.oauthBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 16px;
+  border: 1.5px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: inherit;
+  transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+}
+
+.oauthBtn:hover:not(:disabled) {
+  background: var(--bg);
+  border-color: #94a3b8;
+  box-shadow: var(--shadow-sm);
+}
+
+.oauthBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.authDivider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  margin: 2px 0;
+}
+
+.authDivider::before,
+.authDivider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
 .homeLink {
   text-align: center;
   font-size: 0.82rem;
